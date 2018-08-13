@@ -50,7 +50,7 @@ def sentimentAnalysis(movies):
                 review['words_sentiment_score'].append(getSentimentScore(word))
     return movies
 
-def reviewsPrerocessing(movies):
+def reviewsPreprocessing(movies):
     for movie in movies:
         for review in movie['reviews']:
 
@@ -73,7 +73,7 @@ def main():
     movies = extract_corpus_data()
     # movies = movies[1:10]
     movies = toLowerCase(movies)
-    movies = reviewsPrerocessing(movies)
+    movies = reviewsPreprocessing(movies)
     movies = sentimentAnalysis(movies)
     print('vv')
 
