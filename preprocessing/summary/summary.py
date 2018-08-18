@@ -7,7 +7,7 @@ from textblob import TextBlob
 
 def extract_corpus_data():
     reviews_json = {}
-    with open('/Users/liatvi/Documents/NLP/final-project-NLP/nlp-rt-movie-review-summarization/Corpus/movies_json_lines.jl', 'r') as corpus_json_file:
+    with open('/Users/liatvi/Documents/NLP/final-project-NLP/nlp-rt-movie-review-summarization/Corpus/rt-movie-reviews-corpus.json', 'r') as corpus_json_file:
         reviews_json = json.load(corpus_json_file)
     summarsied_movies_reviews = [movie for movie in  reviews_json['movies'] if movie['summary'] != 'No consensus yet.']
     not_summarsied_movies_reviews = [movie for movie in reviews_json['movies'] if movie['summary'] == 'No consensus yet.']
@@ -16,7 +16,8 @@ def extract_corpus_data():
 def writeReviewsToTextFiles(summarsied_movies_reviews):
     movie_counter = 0
     for movie in summarsied_movies_reviews:
-        summary_file = open("/Users/liatvi/Documents/NLP/final-project-NLP/nlp-rt-movie-review-summarization/preprocessing/summary/pytextrank/dat/" + movie['name'] + "_summary.json" , "w+")
+        file_name = movie['name'].replace(' ','-')
+        summary_file = open("/Users/liatvi/Documents/NLP/final-project-NLP/nlp-rt-movie-review-summarization/preprocessing/summary/pytextrank/dat/" + file_name + "_summary.json" , "w+")
         summary_text = movie['summary']
         summary_text = summary_text.replace('"','')
         summary_file.write("{\"id\":\"")
@@ -25,18 +26,20 @@ def writeReviewsToTextFiles(summarsied_movies_reviews):
         summary_file.write(summary_text)
         summary_file.write("\"}")
 
-        reviews_file = open("/Users/liatvi/Documents/NLP/final-project-NLP/nlp-rt-movie-review-summarization/preprocessing/summary/pytextrank/dat/" + str(movie_counter) + "_reviews.json" , "w+")
-        reviews_file.write("{\"id\":\"")
-        reviews_file.write(str(movie_counter))
-        reviews_file.write("\",\"text\":\"")
+        review_counter = 0
         for review in  movie['reviews']:
+            reviews_file = open("/Users/liatvi/Documents/NLP/final-project-NLP/nlp-rt-movie-review-summarization/preprocessing/summary/pytextrank/dat/" + file_name + "_" + str(review_counter) + "_reviews.json" , "w+")
+            reviews_file.write("{\"id\":\"")
+            reviews_file.write(str(review_counter))
+            reviews_file.write("\",\"text\":\"")
             review_text = review['text']
             review_text = review_text.replace('"','')
             reviews_file.write(review_text)
-        reviews_file.write("\"}")
+            reviews_file.write("\"}")
+            review_counter += 1
         movie_counter += 1
 
-def stageOne():
+def stageOne(filename):
     file_dir = '/Users/liatvi/Documents/NLP/final-project-NLP/nlp-rt-movie-review-summarization/preprocessing/summary/pytextrank/dat/'
     for filename in os.listdir(file_dir):
 
@@ -84,10 +87,20 @@ def stageFour():
             subprocess.call(["python3", stage4_dir, stage2_input], stdout=output)
 
 def getParases():
-    stageOne()
-    stageTwo()
-    # stageTree()
-    stageFour()
+    file_dir = '/Users/liatvi/Documents/NLP/final-project-NLP/nlp-rt-movie-review-summarization/preprocessing/summary/pytextrank/dat/'
+    for filename in os.listdir(file_dir):
+        stageOne()
+        stageTwo()
+        # stageTree()
+        stageFour()
+
+###########
+# output the movie phrases to a file
+###########
+def output_phrases():
+    output = '/Users/liatvi/Documents/NLP/final-project-NLP/nlp-rt-movie-review-summarization/preprocessing/summary/phrases.json
+
+
 
 
 def main():
