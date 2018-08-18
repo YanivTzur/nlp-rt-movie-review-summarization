@@ -4,7 +4,7 @@ from textblob import TextBlob
 
 def extract_corpus_data():
     reviews_json = {}
-    with open('/Users/liatvi/Documents/NLP/final project NLP/nlp-rt-movie-review-summarization/Corpus/movies_json_lines.jl', 'r') as corpus_json_file:
+    with open('/Users/liatvi/Documents/NLP/final-project-NLP/nlp-rt-movie-review-summarization/Corpus/movies_json_lines.jl', 'r') as corpus_json_file:
         reviews_json = json.load(corpus_json_file)
     return reviews_json['movies']
 
@@ -75,6 +75,5 @@ def main():
     movies = toLowerCase(movies)
     movies = reviewsPreprocessing(movies)
     movies = sentimentAnalysis(movies)
-    print('vv')
 
 main()
