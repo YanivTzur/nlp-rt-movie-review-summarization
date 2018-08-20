@@ -23,3 +23,6 @@ if __name__ == "__main__":
     # graf_text = " ".join(s)
     # print("**excerpts:** %s\n\n**keywords:** %s" % (graf_text, phrases,))
     print(phrases)
+
+def stage4(jsonData):
+    return set([p for p in limit_keyphrases((data for data in jsonData), phrase_limit=12)])
