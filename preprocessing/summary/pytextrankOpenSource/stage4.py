@@ -25,4 +25,4 @@ if __name__ == "__main__":
     print(phrases)
 
 def stage4(jsonData):
-    return set([p for p in limit_keyphrases((data for data in jsonData), phrase_limit=12)])
+    return list(set([p for p in limit_keyphrases((data for data in jsonData), phrase_limit=12)]))
