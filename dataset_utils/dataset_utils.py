@@ -21,7 +21,9 @@ def build_data_sets_from_corpus(corpus):
 
     data_sets['train'] = training_set.to_dict('records')
     data_sets['gold'] = gold_set.to_dict('records')
-    data_sets['test'] = gold_set.drop('summary', axis=1).to_dict('records')
+    data_sets['test'] = gold_set.drop('summary', axis=1)\
+                                .drop('average_rating', axis=1)\
+                                .to_dict('records')
 
     return data_sets
 
