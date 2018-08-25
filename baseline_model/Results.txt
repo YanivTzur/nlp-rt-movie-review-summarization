@@ -1,24 +1,3 @@
-Based on average rating assigned by RT editors:
-With preprocessing:
-Overall Average Accuracy:0.4774972557628979
-Average Recall:0.061405470146932206
-Average Gold Precision:0.061405470146932206
-Average Gold FScore:0.061405470146932206
-Average Recall:0.018327393672859453
-Average Gold Precision:0.018327393672859453
-Average Gold FScore:0.018327393672859453
-
-Without preprocessing:
-Overall Average Accuracy:0.5631174533479693
-ROUGE1:
-Average Recall:0.049234881938386564
-Average Gold Precision:0.049234881938386564
-Average Gold FScore:0.049234881938386564
-ROUGE2:
-Average Recall:0.016008774678864687
-Average Gold Precision:0.016008774678864687
-Average Gold FScore:0.016008774678864687
-
 Based on per review average of ratings:
 With preprocessing:
 Overall Average Accuracy:0.5565312843029637
@@ -31,6 +10,27 @@ Average Gold FScore:0.018327393672859453
 
 Without preprocessing:
 Overall Average Accuracy:0.6048298572996706
+ROUGE1:
+Average Recall:0.06777139990854451
+Average Gold Precision:0.06777139990854451
+Average Gold FScore:0.06777139990854451
+ROUGE2:
+Average Recall:0.015900689088634463
+Average Gold Precision:0.015900689088634463
+Average Gold FScore:0.015900689088634463
+
+Based on average rating assigned by RT editors:
+With preprocessing:
+Overall Average Accuracy:0.4774972557628979
+Average Recall:0.061405470146932206
+Average Gold Precision:0.061405470146932206
+Average Gold FScore:0.061405470146932206
+Average Recall:0.018327393672859453
+Average Gold Precision:0.018327393672859453
+Average Gold FScore:0.018327393672859453
+
+Without preprocessing:
+Overall Average Accuracy:0.5631174533479693
 ROUGE1:
 Average Recall:0.049234881938386564
 Average Gold Precision:0.049234881938386564

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys
 import os
-
+import random
 from dataset_utils import dataset_utils
 from sumeval.metrics.rouge import RougeCalculator
 from textblob import TextBlob
@@ -61,12 +61,8 @@ def decode(test_data, sentiment_ratio):
 
         movie['average_rating'] = min(round(sentiment_score_average * sentiment_ratio), NORMALIZED_RANGE_MAX)
 
-        # Set the first summary as the baseline summary:
-        # we take the first 5 words of a random review as a summary.
-        first_review_words = movie['reviews'][0]['text'].split()
-        first_review_length = len(first_review_words)
-        movie['summary'] = movie['reviews'][0]['text'].split()[:min(5, first_review_length)]
-        movie['summary'] = ' '.join(movie['summary'])
+        # We take the first sentence of a random summary as the chosen summary.
+        movie['summary'] = movie['reviews'][random.randint(0, len(movie['reviews'])-1)]['text'].split('.')[0]
         movie_count += 1
         print("Movies decoded: {0}, computed rating before rounding: {1}, after rounding: {2}"
               .format(str(movie_count),
@@ -77,16 +73,6 @@ def decode(test_data, sentiment_ratio):
 
 
 def prepare_gold_data(gold_data_set):
-    # for movie in gold_data_set:
-    #     overall_score = 0
-    #     for review in gold_data_set[movie]['data']:
-    #         overall_score += review['overall']
-    #     overall_score_average = round(overall_score / gold_data_set[product]['data'].__len__())
-    #     gold_data_set[movie]['overall'] = overall_score_average
-    #
-    #     # set a the first summary as the baseline summary
-    #     gold_data_set[product]['summary'] = gold_data_set[product]['data'][0]['summary']
-
     return gold_data_set
 
 
@@ -147,8 +133,8 @@ def evaluate_summary(decoded_test_data, gold_data, n_gram_order):
                 test_to_gold_map[decoded_movie['id']] = (decoded_movie, gold_movie)
 
     for decoded_movie_id in test_to_gold_map.keys():
-        rouge = calculate_rouge(test_to_gold_map[decoded_movie_id][1]["summary"],
-                                test_to_gold_map[decoded_movie_id][0]["summary"],
+        rouge = calculate_rouge(dataset_utils.preprocess_text(test_to_gold_map[decoded_movie_id][1]["summary"]),
+                                dataset_utils.preprocess_text(test_to_gold_map[decoded_movie_id][0]["summary"]),
                                 n_gram_order)
         recall_sum += rouge['recall']
         precision_sum += rouge['precision']
@@ -181,20 +167,6 @@ def calculate_rouge(summary_gold, summary_test, ngram_order):
         summary=summary_test,
         references=[summary_gold],
         n=ngram_order, alpha=0.5)
-    # rouge_recall = rouge.rouge_n(
-    #     summary=summary_test,
-    #     references=[summary_gold],
-    #     n=ngram_order, alpha=0)
-    #
-    # rouge_precision = rouge.rouge_n(
-    #     summary=summary_test,
-    #     references=[summary_gold],
-    #     n=ngram_order, alpha=1)
-    #
-    # rouge_f_score = rouge.rouge_n(
-    #     summary=summary_test,
-    #     references=[summary_gold],
-    #     n=ngram_order, alpha=0.5)
     return {'recall': rouge_recall, 'precision': rouge_precision, 'fScore': rouge_f_score}
 
 
