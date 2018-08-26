@@ -156,12 +156,12 @@ def calculate_rouge(summary_gold, summary_test, ngram_order):
     rouge_recall = rouge.rouge_n(
         summary=summary_test,
         references=[summary_gold],
-        n=ngram_order, alpha=0.5)
+        n=ngram_order, alpha=0)
 
     rouge_precision = rouge.rouge_n(
         summary=summary_test,
         references=[summary_gold],
-        n=ngram_order, alpha=0.5)
+        n=ngram_order, alpha=1)
 
     rouge_f_score = rouge.rouge_n(
         summary=summary_test,
