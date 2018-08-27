@@ -3,13 +3,14 @@ import sys
 import os
 import random
 from dataset_utils import dataset_utils
-from sumeval.metrics.rouge import RougeCalculator
 from textblob import TextBlob
 import datetime
 
 USAGE_STRING = 'Usage: python baseline_model.py [corpus_path] True/False'
-NORMALIZED_RANGE_MIN = 1
-NORMALIZED_RANGE_MAX = 5
+NORMALIZED_RANGE_MIN = 1 # The minimum value in the set of values a sentiment score
+                         # can receive.
+NORMALIZED_RANGE_MAX = 5 # The maximum value in the set of values a sentiment score
+                         # can receive.
 
 
 def train_model(train_data_set):
@@ -27,7 +28,8 @@ def train_model(train_data_set):
 
     for movie in train_data_set:
         sentiment_score = 0
-        review_ratings = [shift_scale(review['rating'], 1, 5, NORMALIZED_RANGE_MIN, NORMALIZED_RANGE_MAX)
+        review_ratings = [dataset_utils.shift_scale(review['rating'], 1, 5,
+                          NORMALIZED_RANGE_MIN, NORMALIZED_RANGE_MAX)
                           for review in movie['reviews']]
         movie['rating_label'] = sum(review_ratings) / len(review_ratings)
         for review in movie['reviews']:
@@ -62,6 +64,7 @@ def decode(test_data, sentiment_ratio):
         movie['average_rating'] = min(round(sentiment_score_average * sentiment_ratio), NORMALIZED_RANGE_MAX)
 
         # We take the first sentence of a random summary as the chosen summary.
+        random.seed(0) # Set constant seed so every user gets the same results.
         movie['summary'] = movie['reviews'][random.randint(0, len(movie['reviews'])-1)]['text'].split('.')[0]
         movie_count += 1
         print("Movies decoded: {0}, computed rating before rounding: {1}, after rounding: {2}"
@@ -76,10 +79,6 @@ def prepare_gold_data(gold_data_set):
     return gold_data_set
 
 
-def shift_scale(old_value, old_min, old_max, new_min, new_max):
-    return ((new_max - new_min) / (old_max - old_min)) * (old_value - old_max) + new_max;
-
-
 def get_sentiment_score(text):
     """
     Normalizes the sentiment score from a scale of [-1, 1] to the chosen normalized
@@ -87,92 +86,13 @@ def get_sentiment_score(text):
     :param text: the input text whose sentiment score is to be computed and returned.
     :return: the sentiment score of the input text, normalized to a discrete scale of {1,2,3,4,5}.
     """
-    return round(shift_scale(TextBlob(text).sentiment.polarity, -1, 1, NORMALIZED_RANGE_MIN, NORMALIZED_RANGE_MAX))
-
-
-def evaluate_predicted_sentiment(decoded_test_data, gold_data):
-    eval_file = open('baselineOverAllEvaluation', 'w')
-    eval_file.writelines(['# ------------------------\n',
-                          '#  Over All Evaluation - Final Project - Evaluation\n',
-                          '# ------------------------\n',
-                          'index\t\t\taccuracy\n'])
-    counter = 0
-    accuracy_percentage_sum = 0
-    for decoded_movie in decoded_test_data:
-        for gold_movie in gold_data:
-            if decoded_movie['id'] == gold_movie['id']:
-                review_ratings = [shift_scale(review['rating'], 1, 5, NORMALIZED_RANGE_MIN, NORMALIZED_RANGE_MAX)
-                                  for review in gold_movie['reviews']]
-                gold_movie['rating_label'] = round(sum(review_ratings) / len(review_ratings))
-                # print('test rating: {}, gold rating: {}'.format(decoded_movie['average_rating'],
-                #                                                 gold_movie['rating_label']))
-                if decoded_movie['average_rating'] == gold_movie['rating_label']:
-                    accuracy_percentage_sum += 1
-        counter += 1
-        accuracy_percentage = (accuracy_percentage_sum * 1.0) / counter
-        eval_file.write(str(counter) + '\t\t\t' + str(accuracy_percentage) + '\n')
-    eval_file.write('# ------------------------\n')
-    eval_file.write('Overall Average Accuracy:' + str(accuracy_percentage))
-    eval_file.close()
-
-
-def evaluate_summary(decoded_test_data, gold_data, n_gram_order):
-    eval_file = open('baseline summary evaluation-ROUGE_' + str(n_gram_order), 'w')
-    eval_file.writelines(['# ------------------------\n',
-                          '#  Summarization - Rouge_', str(n_gram_order), ' - Final Project - Evaluation\n',
-                          '# ------------------------\n',
-                          'index\t\t\tRecall\t\t\tPrecision\t\t\tFscore\n'])
-    counter = 0
-    recall_sum = 0
-    precision_sum = 0
-    f_score_sum = 0
-    test_to_gold_map = dict()
-    for decoded_movie in decoded_test_data:
-        for gold_movie in gold_data:
-            if decoded_movie['id'] == gold_movie['id']:
-                test_to_gold_map[decoded_movie['id']] = (decoded_movie, gold_movie)
-
-    for decoded_movie_id in test_to_gold_map.keys():
-        rouge = calculate_rouge(dataset_utils.preprocess_text(test_to_gold_map[decoded_movie_id][1]["summary"]),
-                                dataset_utils.preprocess_text(test_to_gold_map[decoded_movie_id][0]["summary"]),
-                                n_gram_order)
-        recall_sum += rouge['recall']
-        precision_sum += rouge['precision']
-        f_score_sum += rouge['fScore']
-
-        eval_file.write(
-            str(counter) + '\t\t\t' + str(rouge['recall']) + '\t\t\t' + str(rouge['precision']) + '\t\t\t' + str(
-                rouge['fScore']) + '\n')
-
-    eval_file.write('# ------------------------\n')
-    eval_file.write('Average Recall:' + str(recall_sum / len(decoded_test_data)) + '\n')
-    eval_file.write('Average Gold Precision:' + str(precision_sum / len(decoded_test_data)) + '\n')
-    eval_file.write('Average Gold FScore:' + str(f_score_sum / len(decoded_test_data)) + '\n')
-    eval_file.close()
-
-
-def calculate_rouge(summary_gold, summary_test, ngram_order):
-    rouge = RougeCalculator(stopwords=True, lang="en")
-    rouge_recall = rouge.rouge_n(
-        summary=summary_test,
-        references=[summary_gold],
-        n=ngram_order, alpha=0)
-
-    rouge_precision = rouge.rouge_n(
-        summary=summary_test,
-        references=[summary_gold],
-        n=ngram_order, alpha=1)
-
-    rouge_f_score = rouge.rouge_n(
-        summary=summary_test,
-        references=[summary_gold],
-        n=ngram_order, alpha=0.5)
-    return {'recall': rouge_recall, 'precision': rouge_precision, 'fScore': rouge_f_score}
+    return round(dataset_utils.shift_scale(TextBlob(text).sentiment.polarity, -1, 1, NORMALIZED_RANGE_MIN,
+                                           NORMALIZED_RANGE_MAX))
 
 
 def main():
     # Usage of the program is of the form 'python baseline_model.py [dataset_path]'.
-    if len(sys.argv) > 3:
+    if len(sys.argv) != 3:
         print(USAGE_STRING)
         exit(1)
     if not os.path.exists(sys.argv[1]):
@@ -195,9 +115,10 @@ def main():
     print("{} : End of decoding".format(datetime.datetime.now()))
     gold_data = prepare_gold_data(data_sets['gold'])
     print("{} : Starting evaluation".format(datetime.datetime.now()))
-    evaluate_predicted_sentiment(decoded_test_data, gold_data)
-    evaluate_summary(decoded_test_data, gold_data, 1)
-    evaluate_summary(decoded_test_data, gold_data, 2)
+    dataset_utils.evaluate_predicted_sentiment(decoded_test_data, gold_data,
+                                               NORMALIZED_RANGE_MIN, NORMALIZED_RANGE_MAX)
+    dataset_utils.evaluate_summary(decoded_test_data, gold_data, 1)
+    dataset_utils.evaluate_summary(decoded_test_data, gold_data, 2)
     print("{} : End of evaluation".format(datetime.datetime.now()))
 
 
