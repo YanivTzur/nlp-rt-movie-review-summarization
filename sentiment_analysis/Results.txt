@@ -1,9 +1,11 @@
 Random Forest:
-Overall Average Accuracy:0.535675082327113
-Overall Average Accuracy:0.6300768386388584
+Overall Average Accuracy: 0.535675082327113
+Overall Average Accuracy: 0.6300768386388584
 With information about average distribution of {1,2,3,4,5} per review:
-Overall Average Accuracy:0.6531284302963776
+Overall Average Accuracy: 0.6531284302963776
+With only sum of word embeddings of reviews for each movie:
+Overall Average Accuracy: 0.7058177826564215
 Naive Bayes:
-Overall Average Accuracy:0.5093304061470911
+Overall Average Accuracy: 0.5093304061470911
 Kernel SVM:
-Overall Average Accuracy:0.5697036223929748
+Overall Average Accuracy: 0.5697036223929748

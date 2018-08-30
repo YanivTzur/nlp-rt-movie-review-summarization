@@ -9,9 +9,7 @@ USAGE_STRING = 'Usage: python baseline_model.py [corpus_path] True/False'
 NORMALIZED_RANGE_MIN = 1  # The minimum value in the set of values a sentiment score
                           # can receive.
 NORMALIZED_RANGE_MAX = 5  # The maximum value in the set of values a sentiment score
-
-
-# can receive.
+                          #  can receive.
 
 
 def train_model(train_data_set):
