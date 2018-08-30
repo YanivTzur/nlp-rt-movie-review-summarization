@@ -94,15 +94,6 @@ def get_preprocessed_data_sets(datasets_directory_name):
             'test': json.load(open(os.path.join(datasets_directory_name, PREPROCESSED_TEST_FILE_NAME), 'r')),
             'gold': json.load(open(os.path.join(datasets_directory_name, PREPROCESSED_GOLD_FILE_NAME), 'r'))}
 
-
-def build_data_sets_from_json_file(json_file_path, preprocess=False):
-    datasets_directory_name = os.path.dirname(json_file_path)
-    if preprocess and preprocessed_data_sets_exist(datasets_directory_name):
-        return get_preprocessed_data_sets(datasets_directory_name)
-    corpus = build_corpus(json_file_path)
-    return build_data_sets_from_corpus(datasets_directory_name, corpus, preprocess)
-
-
 def evaluate_predicted_sentiment(decoded_test_data, gold_data, normalized_range_min,
                                  normalized_range_max):
     """
@@ -203,3 +194,11 @@ def calculate_rouge(summary_gold, summary_test, ngram_order):
         references=[summary_gold],
         n=ngram_order, alpha=0.5)
     return {'recall': rouge_recall, 'precision': rouge_precision, 'fScore': rouge_f_score}
+
+
+def build_data_sets_from_json_file(json_file_path, preprocess=False):
+    datasets_directory_name = os.path.dirname(json_file_path)
+    if preprocess and preprocessed_data_sets_exist(datasets_directory_name):
+        return get_preprocessed_data_sets(datasets_directory_name)
+    corpus = build_corpus(json_file_path)
+    return build_data_sets_from_corpus(datasets_directory_name, corpus, preprocess)

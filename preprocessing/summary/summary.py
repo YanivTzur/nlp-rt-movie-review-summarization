@@ -4,7 +4,7 @@ import sys
 import subprocess
 import os
 from textblob import TextBlob
-from dataset_utils.dataset_utils import build_data_sets_from_json_file
+from utils.dataset_utils import build_data_sets_from_json_file
 from preprocessing.summary.pytextrankOpenSource.stage1 import stage1
 from preprocessing.summary.pytextrankOpenSource.stage2 import stage2
 from preprocessing.summary.pytextrankOpenSource.stage4 import stage4

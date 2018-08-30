@@ -2,15 +2,16 @@
 import sys
 import os
 import random
-from dataset_utils import dataset_utils
-from textblob import TextBlob
+from utils import dataset_utils, sentiment_utils
 import datetime
 
 USAGE_STRING = 'Usage: python baseline_model.py [corpus_path] True/False'
-NORMALIZED_RANGE_MIN = 1 # The minimum value in the set of values a sentiment score
-                         # can receive.
-NORMALIZED_RANGE_MAX = 5 # The maximum value in the set of values a sentiment score
-                         # can receive.
+NORMALIZED_RANGE_MIN = 1  # The minimum value in the set of values a sentiment score
+                          # can receive.
+NORMALIZED_RANGE_MAX = 5  # The maximum value in the set of values a sentiment score
+
+
+# can receive.
 
 
 def train_model(train_data_set):
@@ -29,11 +30,12 @@ def train_model(train_data_set):
     for movie in train_data_set:
         sentiment_score = 0
         review_ratings = [dataset_utils.shift_scale(review['rating'], 1, 5,
-                          NORMALIZED_RANGE_MIN, NORMALIZED_RANGE_MAX)
+                                                    NORMALIZED_RANGE_MIN, NORMALIZED_RANGE_MAX)
                           for review in movie['reviews']]
         movie['rating_label'] = sum(review_ratings) / len(review_ratings)
         for review in movie['reviews']:
-            sentiment_score += get_sentiment_score(review['text'])
+            sentiment_score += sentiment_utils.get_sentiment_score(review['text'], NORMALIZED_RANGE_MIN,
+                                                                   NORMALIZED_RANGE_MAX)
 
         sentiment_score_average = sentiment_score / len(movie['reviews'])
         curr_movie_sentiment_average = movie['rating_label'] / sentiment_score_average
@@ -58,16 +60,18 @@ def decode(test_data, sentiment_ratio):
     for movie in test_data:
         sentiment_score = 0
         for review in movie['reviews']:
-            sentiment_score += get_sentiment_score(review['text'])
+            sentiment_score += sentiment_utils.get_sentiment_score(review['text'],
+                                                                   NORMALIZED_RANGE_MIN,
+                                                                   NORMALIZED_RANGE_MAX)
         sentiment_score_average = sentiment_score / len(movie['reviews'])
 
         movie['average_rating'] = min(round(sentiment_score_average * sentiment_ratio), NORMALIZED_RANGE_MAX)
 
         # We take the first sentence of a random summary as the chosen summary.
-        random.seed(0) # Set constant seed so every user gets the same results.
-        movie['summary'] = movie['reviews'][random.randint(0, len(movie['reviews'])-1)]['text'].split('.')[0]
+        random.seed(0)  # Set constant seed so every user gets the same results.
+        movie['summary'] = movie['reviews'][random.randint(0, len(movie['reviews']) - 1)]['text'].split('.')[0]
         movie_count += 1
-        print("Movies decoded: {0}, computed rating before rounding: {1}, after rounding: {2}"
+        print("Movies decoded: {0}, computed rating before modification: {1}, after modification and rounding: {2}"
               .format(str(movie_count),
                       sentiment_score_average,
                       round(sentiment_score_average * sentiment_ratio)))
@@ -79,19 +83,7 @@ def prepare_gold_data(gold_data_set):
     return gold_data_set
 
 
-def get_sentiment_score(text):
-    """
-    Normalizes the sentiment score from a scale of [-1, 1] to the chosen normalized
-    discrete scale of {1,2,3,4,5}.
-    :param text: the input text whose sentiment score is to be computed and returned.
-    :return: the sentiment score of the input text, normalized to a discrete scale of {1,2,3,4,5}.
-    """
-    return round(dataset_utils.shift_scale(TextBlob(text).sentiment.polarity, -1, 1, NORMALIZED_RANGE_MIN,
-                                           NORMALIZED_RANGE_MAX))
-
-
 def main():
-    # Usage of the program is of the form 'python baseline_model.py [dataset_path]'.
     if len(sys.argv) != 3:
         print(USAGE_STRING)
         exit(1)
