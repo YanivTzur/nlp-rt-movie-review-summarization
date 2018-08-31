@@ -75,9 +75,9 @@ def build_data_sets_from_corpus(datasets_directory_name, corpus, preprocess=Fals
 
     data_sets['train'] = training_set.to_dict('records')
     data_sets['gold'] = gold_set.to_dict('records')
-    data_sets['test'] = gold_set.drop('summary', axis=1)\
-                                .drop('average_rating', axis=1)\
-                                .to_dict('records')
+    data_sets['test'] = gold_set.drop('summary', axis=1) \
+        .drop('average_rating', axis=1) \
+        .to_dict('records')
     if preprocess:
         data_sets = preprocess_datasets(data_sets, datasets_directory_name)
     return data_sets
@@ -85,7 +85,7 @@ def build_data_sets_from_corpus(datasets_directory_name, corpus, preprocess=Fals
 
 def preprocessed_data_sets_exist(datasets_base_path):
     return os.path.exists(os.path.join(datasets_base_path, PREPROCESSED_TRAIN_FILE_NAME)
-                          and os.path.exists(os.path.join(datasets_base_path, PREPROCESSED_TEST_FILE_NAME))\
+                          and os.path.exists(os.path.join(datasets_base_path, PREPROCESSED_TEST_FILE_NAME)) \
                           and os.path.exists(os.path.join(datasets_base_path, PREPROCESSED_GOLD_FILE_NAME)))
 
 
@@ -93,6 +93,7 @@ def get_preprocessed_data_sets(datasets_directory_name):
     return {'train': json.load(open(os.path.join(datasets_directory_name, PREPROCESSED_TRAIN_FILE_NAME), 'r')),
             'test': json.load(open(os.path.join(datasets_directory_name, PREPROCESSED_TEST_FILE_NAME), 'r')),
             'gold': json.load(open(os.path.join(datasets_directory_name, PREPROCESSED_GOLD_FILE_NAME), 'r'))}
+
 
 def evaluate_predicted_sentiment(decoded_test_data, gold_data, normalized_range_min,
                                  normalized_range_max):
@@ -118,15 +119,17 @@ def evaluate_predicted_sentiment(decoded_test_data, gold_data, normalized_range_
     for decoded_movie in decoded_test_data:
         for gold_movie in gold_data:
             if decoded_movie['id'] == gold_movie['id']:
-                review_ratings = [shift_scale(review['rating'], 1, 5,
-                                              normalized_range_min, normalized_range_max)
+                review_ratings = [review['rating']
                                   for review in gold_movie['reviews']]
-                gold_movie['rating_label'] = shift_scale(round(sum(review_ratings) / len(review_ratings)),
-                                                         1, 5, normalized_range_min,
-                                                         normalized_range_max)
-                # print('test rating: {}, gold rating: {}'.format(decoded_movie['average_rating'],
-                #                                                 gold_movie['rating_label']))
-                if decoded_movie['average_rating'] == gold_movie['rating_label']:
+                gold_movie['rating_label'] = round(shift_scale(round(sum(review_ratings)
+                                                                     /
+                                                                     len(review_ratings)),
+                                                               1, 5, normalized_range_min,
+                                                               normalized_range_max))
+                computed_label = round(shift_scale(decoded_movie['average_rating'], 1,
+                                       5, normalized_range_min, normalized_range_max))
+                ground_truth_label = gold_movie['rating_label']
+                if computed_label == ground_truth_label:
                     accuracy_percentage_sum += 1
         counter += 1
         accuracy_percentage = (accuracy_percentage_sum * 1.0) / counter
