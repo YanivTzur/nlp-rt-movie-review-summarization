@@ -95,27 +95,61 @@ def get_preprocessed_data_sets(datasets_directory_name):
             'gold': json.load(open(os.path.join(datasets_directory_name, PREPROCESSED_GOLD_FILE_NAME), 'r'))}
 
 
-def evaluate_predicted_sentiment(decoded_test_data, gold_data, normalized_range_min,
-                                 normalized_range_max):
+def get_macro_average_mean_absolute_error(gold_data, movie_rating_lists):
+    """
+    Computes the evaluation measure of macro-average mean absolute error, where lower is better.
+    :param decoded_test_data: the test set, with its predicted values.
+    :param gold_data: the gold set, which has the same examples as the test set, but also has
+                      the ground truth values.
+    :param movie_rating_lists: a dictionary, containing for each possible sentiment score the list of
+                               examples which have that value as their ground truth sentiment score.
+    :return: the macro-average mean absolute error.
+    """
+    macro_average_mean_absolute_error = 0
+    number_of_classes = len(movie_rating_lists.keys())
+    normalized_range_min = min(movie_rating_lists.keys())
+    normalized_range_max = max(movie_rating_lists.keys()) + 1
+
+    for j in range(normalized_range_min, normalized_range_max):
+        if len(movie_rating_lists[j]) > 0:
+            for decoded_movie in movie_rating_lists[j]:
+                for gold_movie in gold_data:
+                    if decoded_movie['id'] == gold_movie['id']:
+                        computed_label = round(shift_scale(decoded_movie['average_rating'], 1,
+                                                           5, normalized_range_min, normalized_range_max))
+                        ground_truth_label = gold_movie['rating_label']
+                        macro_average_mean_absolute_error += abs(computed_label - ground_truth_label)
+            macro_average_mean_absolute_error *= (1.0 / len(movie_rating_lists[j]))
+    macro_average_mean_absolute_error *= (1.0 * number_of_classes)
+    return macro_average_mean_absolute_error
+
+
+def evaluate_predicted_sentiment(evaluation_file_name,
+                                 decoded_test_data, gold_data,
+                                 normalized_range_min, normalized_range_max):
     """
     Evaluates the accuracy of the predicted sentiment for each movie in the test set by comparing
     to the gold set.
     The method also accepts as input two integers normalized_range_min and normalized_range_max,
     such that normalized_range_max > normalized_range_min, and first converts each test and gold
     rating to the respective normalized scale before comparing them.
+    :param evaluation_file_name: the name to give the output file.
     :param decoded_test_data: the test set data.
     :param gold_data: the gold set data.
     :param normalized_range_min: the minimum value in the range to normalize ratings to.
     :param normalized_range_max: the maximum value in the range to normalize ratings to.
     :return: the evaluated accuracy of the prediction as a percentage.
     """
-    eval_file = open('baselineOverAllEvaluation', 'w')
+    eval_file = open(evaluation_file_name, 'w')
     eval_file.writelines(['# ------------------------\n',
                           '#  Over All Evaluation - Final Project - Evaluation\n',
                           '# ------------------------\n',
                           'index\t\t\taccuracy\n'])
     counter = 0
     accuracy_percentage_sum = 0
+    movie_rating_lists = {key: [] for key in range(normalized_range_min, normalized_range_max+1)}
+    print("Movie rating lists: " + str(movie_rating_lists))
+
     for decoded_movie in decoded_test_data:
         for gold_movie in gold_data:
             if decoded_movie['id'] == gold_movie['id']:
@@ -129,25 +163,36 @@ def evaluate_predicted_sentiment(decoded_test_data, gold_data, normalized_range_
                 computed_label = round(shift_scale(decoded_movie['average_rating'], 1,
                                        5, normalized_range_min, normalized_range_max))
                 ground_truth_label = gold_movie['rating_label']
-                if computed_label == ground_truth_label:
+                movie_rating_lists[ground_truth_label].append(decoded_movie)
+                if computed_label != ground_truth_label:
+                    curr_num_of_correct_predictions = 0
+                else:
+                    curr_num_of_correct_predictions = 1
                     accuracy_percentage_sum += 1
         counter += 1
-        accuracy_percentage = (accuracy_percentage_sum * 1.0) / counter
-        eval_file.write(str(counter) + '\t\t\t' + str(accuracy_percentage) + '\n')
+        eval_file.write("{}\n".format("\t\t\t\t".join([str(counter),
+                                                       str(curr_num_of_correct_predictions)])))
+    accuracy_percentage = (accuracy_percentage_sum * 1.0) / counter
     eval_file.write('# ------------------------\n')
-    eval_file.write('Overall Average Accuracy:' + str(accuracy_percentage))
+    eval_file.write('Overall Accuracy (higher is better): {}\n'.format(str(accuracy_percentage)))
+    print("Movie rating lists: " + str({key: len(movie_rating_lists[key])
+                                        for key in movie_rating_lists.keys()}))
+    eval_file.write('Macro-Average Mean Absolute Error (lower is better): '
+                    +
+                    str(get_macro_average_mean_absolute_error(gold_data,
+                                                              movie_rating_lists)))
     eval_file.close()
 
     return accuracy_percentage
 
 
-def evaluate_summary(decoded_test_data, gold_data, n_gram_order):
-    eval_file = open('baseline summary evaluation-ROUGE_' + str(n_gram_order), 'w')
+def evaluate_summary(eval_file_name, decoded_test_data, gold_data, n_gram_order):
+    eval_file = open(eval_file_name, 'w')
     eval_file.writelines(['# ------------------------\n',
                           '#  Summarization - Rouge_', str(n_gram_order), ' - Final Project - Evaluation\n',
                           '# ------------------------\n',
                           'index\t\t\tRecall\t\t\tPrecision\t\t\tFscore\n'])
-    counter = 0
+    counter = 1
     recall_sum = 0
     precision_sum = 0
     f_score_sum = 0
@@ -161,13 +206,18 @@ def evaluate_summary(decoded_test_data, gold_data, n_gram_order):
         rouge = calculate_rouge(preprocess_text(test_to_gold_map[decoded_movie_id][1]["summary"]),
                                 preprocess_text(test_to_gold_map[decoded_movie_id][0]["summary"]),
                                 n_gram_order)
-        recall_sum += rouge['recall']
-        precision_sum += rouge['precision']
-        f_score_sum += rouge['fScore']
+        curr_recall = rouge['recall']
+        curr_precision = rouge['precision']
+        curr_f_score = rouge['fScore']
+        recall_sum += curr_recall
+        precision_sum += curr_precision
+        f_score_sum += curr_f_score
 
-        eval_file.write(
-            str(counter) + '\t\t\t' + str(rouge['recall']) + '\t\t\t' + str(rouge['precision']) + '\t\t\t' + str(
-                rouge['fScore']) + '\n')
+        eval_file.write("{}\n".format("\t\t\t".join([str(counter),
+                                                    str(curr_recall),
+                                                    str(curr_precision),
+                                                    str(curr_f_score)])))
+        counter += 1
 
     recall = recall_sum / len(decoded_test_data)
     precision = precision_sum / len(decoded_test_data)

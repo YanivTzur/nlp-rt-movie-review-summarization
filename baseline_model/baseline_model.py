@@ -33,7 +33,7 @@ def train_model(train_data_set):
         movie['rating_label'] = sum(review_ratings) / len(review_ratings)
         for review in movie['reviews']:
             sentiment_score += sentiment_utils.get_sentiment_score(review['text'], NORMALIZED_RANGE_MIN,
-                                                                   NORMALIZED_RANGE_MAX)
+                                                                   NORMALIZED_RANGE_MAX)[0]
 
         sentiment_score_average = sentiment_score / len(movie['reviews'])
         curr_movie_sentiment_average = movie['rating_label'] / sentiment_score_average
@@ -60,7 +60,7 @@ def decode(test_data, sentiment_ratio):
         for review in movie['reviews']:
             sentiment_score += sentiment_utils.get_sentiment_score(review['text'],
                                                                    NORMALIZED_RANGE_MIN,
-                                                                   NORMALIZED_RANGE_MAX)
+                                                                   NORMALIZED_RANGE_MAX)[0]
         sentiment_score_average = sentiment_score / len(movie['reviews'])
 
         movie['average_rating'] = min(round(sentiment_score_average * sentiment_ratio), NORMALIZED_RANGE_MAX)
@@ -69,10 +69,7 @@ def decode(test_data, sentiment_ratio):
         random.seed(0)  # Set constant seed so every user gets the same results.
         movie['summary'] = movie['reviews'][random.randint(0, len(movie['reviews']) - 1)]['text'].split('.')[0]
         movie_count += 1
-        print("Movies decoded: {0}, computed rating before modification: {1}, after modification and rounding: {2}"
-              .format(str(movie_count),
-                      sentiment_score_average,
-                      round(sentiment_score_average * sentiment_ratio)))
+        print("Movies decoded: {0}".format(str(movie_count)))
 
     return test_data
 
@@ -105,10 +102,11 @@ def main():
     print("{} : End of decoding".format(datetime.datetime.now()))
     gold_data = prepare_gold_data(data_sets['gold'])
     print("{} : Starting evaluation".format(datetime.datetime.now()))
-    dataset_utils.evaluate_predicted_sentiment(decoded_test_data, gold_data,
+    dataset_utils.evaluate_predicted_sentiment("baselineOverAllEvaluation.eval",
+                                               decoded_test_data, gold_data,
                                                NORMALIZED_RANGE_MIN, NORMALIZED_RANGE_MAX)
-    dataset_utils.evaluate_summary(decoded_test_data, gold_data, 1)
-    dataset_utils.evaluate_summary(decoded_test_data, gold_data, 2)
+    dataset_utils.evaluate_summary("baselineSummaryEvaluationROUGE1.eval", decoded_test_data, gold_data, 1)
+    dataset_utils.evaluate_summary("baselineSummaryEvaluationROUGE2.eval", decoded_test_data, gold_data, 2)
     print("{} : End of evaluation".format(datetime.datetime.now()))
 
 

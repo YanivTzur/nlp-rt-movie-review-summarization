@@ -2,6 +2,7 @@ import datetime
 import os
 import sys
 import json
+from textblob import TextBlob
 
 from utils import dataset_utils
 from utils import sentiment_utils
@@ -38,6 +39,8 @@ def arrange_columns(train_data_set_dataframe):
 
 def construct_data_set(dataset_name, data_set_list_of_dicts):
     counter = 0
+    sentiment_phrases = set()
+
     for movie in data_set_list_of_dicts:
         sentiment_scores = [float(sentiment_utils.get_sentiment_score(review['text'], 1, 5)[0])
                             for review in movie['reviews']]
@@ -52,11 +55,12 @@ def construct_data_set(dataset_name, data_set_list_of_dicts):
         movie['average_four_rating_phrase_percent'] = sentiment_scores[4] / len(movie['reviews'])
         movie['average_five_rating_phrase_percent'] = sentiment_scores[5] / len(movie['reviews'])
         review_concatenation = "\n".join([review['text'] for review in movie['reviews']])
+        sentiment_phrases += [" ".join(assesysment[0]) for assessment
+                              in TextBlob(review_concatenation).sentiment_assessments.assessments]
         reviews_average_vector_embedding = nlp(review_concatenation).vector
         # reviews_average_vector_embedding = nlp(review_concatenation).vector / len(movie['reviews'])
         for i in range(0, 300):
             movie['vector_embedding_comp_' + str(i)] = float(reviews_average_vector_embedding[i])
-
         movie['rating_label'] = float(round(numpy.mean([review['rating'] for review in movie['reviews']])))
         counter += 1
         print("Dataset \'{}\': Number of movies processed: {}".format(dataset_name, counter))
@@ -121,13 +125,6 @@ else:
 X_test = pd.DataFrame(gold_data_set.iloc[:, 0:310].values)
 y_ground_truth = gold_data_set.iloc[:, 310].values
 
-# # Feature Scaling
-# from sklearn.preprocessing import StandardScaler
-#
-# sc = StandardScaler()
-# X_train = sc.fit_transform(X_train)
-# X_test = sc.transform(X_test)
-
 # Fitting Random Forest Classification to the Training set
 print("{}: Start of classification".format(datetime.datetime.now()))
 classifier = RandomForestClassifier(n_estimators=100, criterion='entropy', random_state=0,
@@ -138,9 +135,8 @@ print("{}: End of classification".format(datetime.datetime.now()))
 # Predicting the Test set results
 y_pred = classifier.predict(X_test)
 
-dataset_utils.evaluate_predicted_sentiment(fill_values(gold_data_set.copy().drop('rating_label', axis=1),
+dataset_utils.evaluate_predicted_sentiment("sentiment_analysis.eval",
+                                           fill_values(gold_data_set.copy().drop('rating_label', axis=1),
                                                        'average_rating', y_pred).to_dict('records'),
                                            gold_data_set.to_dict('records'),
-                                           1, 3)
-
-# End of Random Forest Classification Template Code
+                                           1, 5)
