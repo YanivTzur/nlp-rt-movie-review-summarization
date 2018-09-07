@@ -3,6 +3,19 @@ from utils import dataset_utils
 
 
 def get_k_rating_percentages(text, normalized_range_min, normalized_range_max):
+    """
+    Receives a certain text, computes the different sentiment phrases (phrases containing
+    sentiment bearing words), normalizes the sentiment score of each sentiment phrase so
+    it is on a discrete scale from normalized_range_min to normalized_range_max, and returns
+    a dictionary containing for each score on this scale the percent of sentiment phrases
+    with this score.
+    :param text: the text to process as described above.
+    :param normalized_range_min: the minimum discrete value of the range into which the
+                                 sentiment score of each sentiment phrase is to be converted.
+    :param normalized_range_max: the maximum discrete value of the range into which the
+                                 sentiment score of each sentiment phrase is to be converted.
+    :return: a dictionary as described above.
+    """
     rating_percentages = [0] * (normalized_range_max - normalized_range_min + 1)
     text_blob = TextBlob(text)
     assessments = text_blob.sentiment_assessments.assessments

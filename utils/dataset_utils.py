@@ -148,7 +148,6 @@ def evaluate_predicted_sentiment(evaluation_file_name,
     counter = 0
     accuracy_percentage_sum = 0
     movie_rating_lists = {key: [] for key in range(normalized_range_min, normalized_range_max+1)}
-    print("Movie rating lists: " + str(movie_rating_lists))
 
     for decoded_movie in decoded_test_data:
         for gold_movie in gold_data:
@@ -175,8 +174,6 @@ def evaluate_predicted_sentiment(evaluation_file_name,
     accuracy_percentage = (accuracy_percentage_sum * 1.0) / counter
     eval_file.write('# ------------------------\n')
     eval_file.write('Overall Accuracy (higher is better): {}\n'.format(str(accuracy_percentage)))
-    print("Movie rating lists: " + str({key: len(movie_rating_lists[key])
-                                        for key in movie_rating_lists.keys()}))
     eval_file.write('Macro-Average Mean Absolute Error (lower is better): '
                     +
                     str(get_macro_average_mean_absolute_error(gold_data,

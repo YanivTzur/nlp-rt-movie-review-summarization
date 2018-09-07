@@ -1,13 +1,59 @@
+Sentiment Analysis:
+
+1-5 Scale:
 Random Forest:
-Overall Average Accuracy: 0.535675082327113
-Overall Average Accuracy: 0.6300768386388584
-With information about average distribution of {1,2,3,4,5} per review:
-Overall Average Accuracy: 0.6531284302963776
+With information only about distribution of sentiment scores on 1-5 scale over movies:
+Overall Accuracy (higher is better): 0.6366630076838639
+Macro-Average Mean Absolute Error (lower is better): 1.322037934202997
+
+With information only about distribution of sentiment scores on 1-5 scale over reviews:
+Overall Accuracy (higher is better): 0.46871569703622395
+Macro-Average Mean Absolute Error (lower is better): 1.6948185292434617
+
+With information about average distribution of {1,2,3,4,5} per review + per movie:
+Overall Accuracy (higher is better): 0.6531284302963776
+Macro-Average Mean Absolute Error (lower is better): 1.3224302024970602
+
 With only sum of word embeddings of reviews for each movie:
 Overall Average Accuracy: 0.7058177826564215
-With sum of word embeddings of reviews + information about distribution of {1,2,3,4,5} scores:
-Overall Average Accuracy:0.7387486278814489
+Macro-Average Mean Absolute Error (lower is better): 0.12052980783137454
+
+With sum of word embeddings of reviews + information about distribution of {1,2,3,4,5} scores per review
+and per movie:
+Overall Accuracy (higher is better): 0.7387486278814489
+Macro-Average Mean Absolute Error (lower is better): 0.3761572130833129
+
+Additionally with a hashed vector of whether each sentiment phrase is found:
+Overall Accuracy (higher is better): 0.7398463227222832
+Macro-Average Mean Absolute Error (lower is better): 0.3123446608123149
+
 Naive Bayes:
 Overall Average Accuracy: 0.5093304061470911
 Kernel SVM:
 Overall Average Accuracy: 0.5697036223929748
+
+1-3 Scale:
+With information only about distribution of sentiment scores on 1-5 scale over movies:
+Overall Accuracy (higher is better): 0.9023051591657519
+Macro-Average Mean Absolute Error (lower is better): 0.7092867575462511
+
+With information only about distribution of sentiment scores on 1-5 scale over reviews:
+Overall Accuracy (higher is better): 0.8968166849615807
+Macro-Average Mean Absolute Error (lower is better): 0.938960564751704
+
+With information about average distribution of {1,2,3,4,5} per review + per movie:
+Overall Accuracy (higher is better): 0.9187705817782656
+Macro-Average Mean Absolute Error (lower is better): 0.7098344693281402
+
+With only sum of word embeddings of reviews for each movie:
+Overall Average Accuracy: 0.9143798024149287
+Macro-Average Mean Absolute Error (lower is better): 0.06253042843232716
+
+With sum of word embeddings of reviews + information about distribution of {1,2,3,4,5} scores per review
+and per movie:
+Overall Accuracy (higher is better): 0.9187705817782656
+Macro-Average Mean Absolute Error (lower is better): 0.21515944498539435
+
+Additionally with a hashed vector of whether each sentiment phrase is found:
+Overall Accuracy (higher is better): 0.9165751920965971
+Macro-Average Mean Absolute Error (lower is better): 0.17672833495618304
