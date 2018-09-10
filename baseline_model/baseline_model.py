@@ -8,7 +8,7 @@ import datetime
 USAGE_STRING = 'Usage: python baseline_model.py [corpus_path] True/False'
 NORMALIZED_RANGE_MIN = 1  # The minimum value in the set of values a sentiment score
                           # can receive.
-NORMALIZED_RANGE_MAX = 5  # The maximum value in the set of values a sentiment score
+NORMALIZED_RANGE_MAX = 2  # The maximum value in the set of values a sentiment score
                           #  can receive.
 
 
@@ -93,7 +93,7 @@ def main():
         preprocess = True
     else:
         preprocess = False
-    data_sets = dataset_utils.build_data_sets_from_json_file(sys.argv[1], preprocess)
+    data_sets = dataset_utils.build_data_sets_from_json_file(sys.argv[1])
     print("{} : Starting training".format(datetime.datetime.now()))
     trained_sentiment_ratio = train_model(data_sets['train'])
     print("{} : End of training".format(datetime.datetime.now()))

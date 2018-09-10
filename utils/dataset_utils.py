@@ -1,14 +1,14 @@
+import datetime
 import json
 import os
-import datetime
 import re
-from pandas.io.json import json_normalize
-from sklearn.model_selection import train_test_split
+
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
+from pandas.io.json import json_normalize
+from sklearn.model_selection import train_test_split
 from sumeval.metrics.rouge import RougeCalculator
-import matplotlib.pyplot as plt
 
 PREPROCESSED_TRAIN_FILE_NAME = 'train_preprocessed.json'
 PREPROCESSED_TEST_FILE_NAME = 'test_preprocessed.json'
@@ -64,7 +64,28 @@ def preprocess_datasets(data_sets, datasets_base_path):
     return data_sets
 
 
-def build_data_sets_from_corpus(datasets_directory_name, corpus, preprocess=False):
+def drop_redundant_columns(dataset):
+    """
+    Removes columns from the dataset that are unused in our experiments and returns
+    the resulting dataset.
+    :param dataset: a dataset.
+    :return: the dataset received after removing the redundant columns.
+    """
+    columns_to_drop = {'year', 'average_rating', 'tomatometer', 'name'} \
+                      .intersection(list(dataset.columns))
+    for column_name in columns_to_drop:
+        dataset.drop(column_name, axis=1)
+    return dataset
+
+
+def build_data_sets_from_corpus(corpus):
+    """
+    Creates training, test and gold sets from the input complete corpus and returns a dictionary
+    containing for each name of dataset, the respective dataset.
+    :param corpus: the original complete corpus, expected to be received as a json with associated
+                   metadata.
+    :return: a dictionary of the form {'train':training_set, 'gold':gold_set, 'test':test_set}
+    """
     data_sets = {'train': [], 'gold': [], 'test': []}
 
     complete_dataset = json_normalize(corpus['movies'])
@@ -72,14 +93,13 @@ def build_data_sets_from_corpus(datasets_directory_name, corpus, preprocess=Fals
     # Splitting the dataset into the Training set and Test set
     training_set, gold_set = train_test_split(complete_dataset,
                                               test_size=0.2, random_state=0)
+    training_set = drop_redundant_columns(training_set)
+    gold_set = drop_redundant_columns(gold_set)
 
     data_sets['train'] = training_set.to_dict('records')
     data_sets['gold'] = gold_set.to_dict('records')
     data_sets['test'] = gold_set.drop('summary', axis=1) \
-        .drop('average_rating', axis=1) \
         .to_dict('records')
-    if preprocess:
-        data_sets = preprocess_datasets(data_sets, datasets_directory_name)
     return data_sets
 
 
@@ -95,7 +115,9 @@ def get_preprocessed_data_sets(datasets_directory_name):
             'gold': json.load(open(os.path.join(datasets_directory_name, PREPROCESSED_GOLD_FILE_NAME), 'r'))}
 
 
-def get_macro_average_mean_absolute_error(gold_data, movie_rating_lists):
+def get_macro_average_mean_absolute_error(gold_data, movie_rating_lists,
+                                          predicted_sentiment_label_name,
+                                          ground_truth_label_name):
     """
     Computes the evaluation measure of macro-average mean absolute error, where lower is better.
     :param decoded_test_data: the test set, with its predicted values.
@@ -103,7 +125,12 @@ def get_macro_average_mean_absolute_error(gold_data, movie_rating_lists):
                       the ground truth values.
     :param movie_rating_lists: a dictionary, containing for each possible sentiment score the list of
                                examples which have that value as their ground truth sentiment score.
+    :param predicted_sentiment_label_name: the name of the column where the predicted sentiment is
+                                      stored.
+    :param ground_truth_label_name: the name of the column where the ground truth sentiment score is
+                               stored.
     :return: the macro-average mean absolute error.
+
     """
     macro_average_mean_absolute_error = 0
     number_of_classes = len(movie_rating_lists.keys())
@@ -115,9 +142,9 @@ def get_macro_average_mean_absolute_error(gold_data, movie_rating_lists):
             for decoded_movie in movie_rating_lists[j]:
                 for gold_movie in gold_data:
                     if decoded_movie['id'] == gold_movie['id']:
-                        computed_label = round(shift_scale(decoded_movie['average_rating'], 1,
+                        computed_label = round(shift_scale(decoded_movie[predicted_sentiment_label_name], 1,
                                                            5, normalized_range_min, normalized_range_max))
-                        ground_truth_label = gold_movie['rating_label']
+                        ground_truth_label = gold_movie[ground_truth_label_name]
                         macro_average_mean_absolute_error += abs(computed_label - ground_truth_label)
             macro_average_mean_absolute_error *= (1.0 / len(movie_rating_lists[j]))
     macro_average_mean_absolute_error *= (1.0 * number_of_classes)
@@ -126,7 +153,9 @@ def get_macro_average_mean_absolute_error(gold_data, movie_rating_lists):
 
 def evaluate_predicted_sentiment(evaluation_file_name,
                                  decoded_test_data, gold_data,
-                                 normalized_range_min, normalized_range_max):
+                                 normalized_range_min, normalized_range_max,
+                                 predicted_sentiment_label_name='average_rating',
+                                 ground_truth_label_name='rating_label'):
     """
     Evaluates the accuracy of the predicted sentiment for each movie in the test set by comparing
     to the gold set.
@@ -138,6 +167,10 @@ def evaluate_predicted_sentiment(evaluation_file_name,
     :param gold_data: the gold set data.
     :param normalized_range_min: the minimum value in the range to normalize ratings to.
     :param normalized_range_max: the maximum value in the range to normalize ratings to.
+    :param predicted_sentiment_label_name: the name of the column where the predicted sentiment is
+                                      stored.
+    :param ground_truth_label_name: the name of the column where the ground truth sentiment score is
+                               stored.
     :return: the evaluated accuracy of the prediction as a percentage.
     """
     eval_file = open(evaluation_file_name, 'w')
@@ -147,21 +180,27 @@ def evaluate_predicted_sentiment(evaluation_file_name,
                           'index\t\t\taccuracy\n'])
     counter = 0
     accuracy_percentage_sum = 0
-    movie_rating_lists = {key: [] for key in range(normalized_range_min, normalized_range_max+1)}
+    curr_num_of_correct_predictions = 0
+    movie_rating_lists = {key: [] for key in range(normalized_range_min, normalized_range_max + 1)}
 
     for decoded_movie in decoded_test_data:
         for gold_movie in gold_data:
             if decoded_movie['id'] == gold_movie['id']:
-                review_ratings = [review['rating']
-                                  for review in gold_movie['reviews']]
-                gold_movie['rating_label'] = round(shift_scale(round(sum(review_ratings)
-                                                                     /
-                                                                     len(review_ratings)),
-                                                               1, 5, normalized_range_min,
-                                                               normalized_range_max))
-                computed_label = round(shift_scale(decoded_movie['average_rating'], 1,
-                                       5, normalized_range_min, normalized_range_max))
-                ground_truth_label = gold_movie['rating_label']
+                if 'reviews' in gold_movie.keys():
+                    review_ratings = [review['rating']
+                                      for review in gold_movie['reviews']]
+                    gold_movie[ground_truth_label_name] = round(shift_scale(round(sum(review_ratings)
+                                                                                  /
+                                                                                  len(review_ratings)),
+                                                                            1, 5, normalized_range_min,
+                                                                            normalized_range_max))
+                else:
+                    gold_movie[ground_truth_label_name] = round(shift_scale(gold_movie[ground_truth_label_name],
+                                                                            1, 5, normalized_range_min,
+                                                                            normalized_range_max))
+                computed_label = round(shift_scale(decoded_movie[predicted_sentiment_label_name], 1,
+                                                   5, normalized_range_min, normalized_range_max))
+                ground_truth_label = gold_movie[ground_truth_label_name]
                 movie_rating_lists[ground_truth_label].append(decoded_movie)
                 if computed_label != ground_truth_label:
                     curr_num_of_correct_predictions = 0
@@ -177,13 +216,17 @@ def evaluate_predicted_sentiment(evaluation_file_name,
     eval_file.write('Macro-Average Mean Absolute Error (lower is better): '
                     +
                     str(get_macro_average_mean_absolute_error(gold_data,
-                                                              movie_rating_lists)))
+                                                              movie_rating_lists,
+                                                              predicted_sentiment_label_name,
+                                                              ground_truth_label_name)))
     eval_file.close()
 
     return accuracy_percentage
 
 
-def evaluate_summary(eval_file_name, decoded_test_data, gold_data, n_gram_order):
+def evaluate_summary(eval_file_name, decoded_test_data, gold_data, n_gram_order,
+                     predicted_summary_label='summary',
+                     ground_truth_summary_label='summary'):
     eval_file = open(eval_file_name, 'w')
     eval_file.writelines(['# ------------------------\n',
                           '#  Summarization - Rouge_', str(n_gram_order), ' - Final Project - Evaluation\n',
@@ -200,8 +243,8 @@ def evaluate_summary(eval_file_name, decoded_test_data, gold_data, n_gram_order)
                 test_to_gold_map[decoded_movie['id']] = (decoded_movie, gold_movie)
 
     for decoded_movie_id in test_to_gold_map.keys():
-        rouge = calculate_rouge(preprocess_text(test_to_gold_map[decoded_movie_id][1]["summary"]),
-                                preprocess_text(test_to_gold_map[decoded_movie_id][0]["summary"]),
+        rouge = calculate_rouge(preprocess_text(test_to_gold_map[decoded_movie_id][1][ground_truth_summary_label]),
+                                preprocess_text(test_to_gold_map[decoded_movie_id][0][predicted_summary_label]),
                                 n_gram_order)
         curr_recall = rouge['recall']
         curr_precision = rouge['precision']
@@ -211,9 +254,9 @@ def evaluate_summary(eval_file_name, decoded_test_data, gold_data, n_gram_order)
         f_score_sum += curr_f_score
 
         eval_file.write("{}\n".format("\t\t\t".join([str(counter),
-                                                    str(curr_recall),
-                                                    str(curr_precision),
-                                                    str(curr_f_score)])))
+                                                     str(curr_recall),
+                                                     str(curr_precision),
+                                                     str(curr_f_score)])))
         counter += 1
 
     recall = recall_sum / len(decoded_test_data)
@@ -246,9 +289,7 @@ def calculate_rouge(summary_gold, summary_test, ngram_order):
     return {'recall': rouge_recall, 'precision': rouge_precision, 'fScore': rouge_f_score}
 
 
-def build_data_sets_from_json_file(json_file_path, preprocess=False):
-    datasets_directory_name = os.path.dirname(json_file_path)
-    if preprocess and preprocessed_data_sets_exist(datasets_directory_name):
-        return get_preprocessed_data_sets(datasets_directory_name)
+def build_data_sets_from_json_file(json_file_path):
+    # datasets_directory_name = os.path.dirname(json_file_path)
     corpus = build_corpus(json_file_path)
-    return build_data_sets_from_corpus(datasets_directory_name, corpus, preprocess)
+    return build_data_sets_from_corpus(corpus)
