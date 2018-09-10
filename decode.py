@@ -1,3 +1,7 @@
+from numpy.random import seed
+seed(1)
+from tensorflow import set_random_seed
+set_random_seed(2)
 import argparse
 import json
 import math
@@ -7,8 +11,13 @@ from datetime import datetime
 
 import pandas as pd
 from BitVector import BitVector
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import  RandomForestClassifier
 from textblob import TextBlob
+import keras
+from keras.models import Sequential
+from keras.layers import Dense
+
+from utils import dataset_utils
 
 SENTIMENT_PHRASES_FILE_NAME = 'train_sentiment_phrases.json'
 
@@ -249,8 +258,9 @@ possible_feature_columns = [column_name for key in column_dictionary.keys()
 
 columns_to_use = get_columns_to_use(possible_feature_columns, column_dictionary, args)
 
-X_train = train_data_set.filter(items=columns_to_use,axis=1)
+X_train = train_data_set.filter(items=columns_to_use, axis=1)
 y_train = train_data_set.loc[:, 'rating_label'].values
+y_train = [dataset_utils.shift_scale(old_value, 1, 5, 0, 1) for old_value in y_train]
 
 X_test = gold_data_set.filter(items=columns_to_use, axis=1)
 y_ground_truth = gold_data_set.loc[:, 'rating_label'].values
@@ -262,18 +272,45 @@ X_train = sc_X.fit_transform(X_train)
 X_test = sc_X.transform(X_test)
 # sc_y = StandardScaler()
 # y_train = sc_y.fit_transform(y_train.reshape(-1, 1)).ravel()
-classifier = RandomForestClassifier(n_estimators=100, criterion='entropy', random_state=0,
-                                    verbose=3, n_jobs=-1)
-classifier.fit(X_train, y_train)
-print("{}: End of classification".format(datetime.now()))
+
+# classifier = RandomForestClassifier(n_estimators=100, criterion='entropy', random_state=0,
+#                                     verbose=3, n_jobs=-1)
+# classifier.fit(X_train, y_train)
+classifier = Sequential()
+
+# Adding the input layer and the first hidden layer
+classifier.add(Dense(activation='relu', input_dim=len(columns_to_use), units=len(columns_to_use),
+                     kernel_initializer='uniform'))
+
+# Adding the second hidden layer
+classifier.add(Dense(activation='relu', units=len(columns_to_use), kernel_initializer='uniform'))
+# Adding the third hidden layer
+classifier.add(Dense(activation='relu', units=len(columns_to_use), kernel_initializer='uniform'))
+# Adding the fourth hidden layer
+classifier.add(Dense(activation='relu', units=len(columns_to_use), kernel_initializer='uniform'))
+
+# Adding the output layer
+classifier.add(Dense(activation='sigmoid', units=1, kernel_initializer='uniform'))
+
+# Compiling the ANN
+classifier.compile(optimizer='adam', loss='mean_absolute_error', metrics=['accuracy'])
+
+# Fitting the ANN to the Training set
+classifier.fit(X_train, y_train, batch_size=10, epochs=100)
 
 # Predicting the Test set results
 y_pred = classifier.predict(X_test)
+y_pred = [round(float(dataset_utils.shift_scale(old_value, 0, 1, 1, 5))) for old_value in y_pred]
+print("{}: End of classification".format(datetime.now()))
 
+print("{}: Start of creation of summaries".format(datetime.now()))
 y_summary = create_summaries(gold_data_set.loc[:, 'reviews'])
+print("{}: End of creation of summaries".format(datetime.now()))
 
-with open(os.path.join(args.OUTPUT_FILES_PATH,'decoded.json'), 'w') as output_file:
+print("{}: Start of creation of decoded examples' file".format(datetime.now()))
+with open(os.path.join(args.OUTPUT_FILES_PATH, 'decoded.json'), 'w') as output_file:
     json.dump(create_decoded_items_list(gold_data_set.loc[:, 'id'],
                                         y_pred, y_ground_truth, y_summary,
                                         gold_data_set.loc[:, 'summary']),
               output_file)
+print("{}: End of creation of decoded examples' file".format(datetime.now()))
