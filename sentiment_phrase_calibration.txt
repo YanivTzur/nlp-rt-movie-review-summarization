@@ -1,0 +1,66 @@
+ANN:
+Two hidden layer, all layers with a number of nodes equal to number of features, all features used except sentiment phrases:
+Overall Accuracy (higher is better): 0.7705817782656421
+Macro-Average Mean Absolute Error (lower is better): 2.4651345369025384
+
+One hidden layer, both 1st and 2nd layers with a number of nodes equal to number of features, all features used:
+Overall Accuracy (higher is better): 0.6004390779363337
+Macro-Average Mean Absolute Error (lower is better): 1.932330948518176
+
+0.3:
+Overall Accuracy (higher is better): 0.7299670691547749
+Macro-Average Mean Absolute Error (lower is better): 0.37538032063737603
+
+0.225:
+Overall Accuracy (higher is better): 0.7387486278814489
+Macro-Average Mean Absolute Error (lower is better): 0.3758973712011168
+
+0.1625
+Overall Accuracy (higher is better): 0.7354555433589463
+Macro-Average Mean Absolute Error (lower is better): 0.3761589226986612
+
+0.1546875:
+Overall Accuracy (higher is better): 0.7365532381997805
+Macro-Average Mean Absolute Error (lower is better): 0.311955615241437
+
+0.15:
+Overall Accuracy (higher is better): 0.7376509330406147
+Macro-Average Mean Absolute Error (lower is better): 0.24918453312959438
+
+Subjectivity > 0:
+Overall Accuracy (higher is better): 0.7332601536772777
+Macro-Average Mean Absolute Error (lower is better): 0.3755091509617864
+
+Subjectivity >= 0.2:
+Overall Accuracy (higher is better): 0.7222832052689352
+Macro-Average Mean Absolute Error (lower is better): 0.31235030057788926
+
+Subjectivity >= 0.5:
+Overall Accuracy (higher is better): 0.7277716794731065
+Macro-Average Mean Absolute Error (lower is better): 0.3120896137133946
+
+0.146875:
+
+Subjectivity >= 0.2:
+Overall Accuracy (higher is better): 
+Macro-Average Mean Absolute Error (lower is better): 
+
+Subjectivity >= 0.5:
+Overall Accuracy (higher is better): 
+Macro-Average Mean Absolute Error (lower is better): 
+
+No subjectivity filtering:
+Overall Accuracy (higher is better): 0.7365532381997805
+Macro-Average Mean Absolute Error (lower is better): 0.3127363395838442
+
+0.13125:
+Overall Accuracy (higher is better): 0.7354555433589463
+Macro-Average Mean Absolute Error (lower is better): 0.3753785717205254
+
+0.1:
+Overall Accuracy (higher is better): 0.7354555433589463
+Macro-Average Mean Absolute Error (lower is better): 0.4388006832173153
+
+No sentiment phrases:
+Overall Accuracy (higher is better): 0.7376509330406147
+Macro-Average Mean Absolute Error (lower is better): 0.37615764539983776

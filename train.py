@@ -53,7 +53,7 @@ def swap_columns(columns, source_label, counter):
 
 def arrange_columns(data_set_dataframe, use_movie_ratings_distribution,
                     use_review_ratings_distribution, use_word_embeddings,
-                    use_sentiment_phrases):
+                    use_sentiment_phrases, use_sentence_sentiment, use_sentence_word_embeddings):
     columns = list(data_set_dataframe.columns)
     counter = Counter()
 
@@ -74,6 +74,8 @@ def arrange_columns(data_set_dataframe, use_movie_ratings_distribution,
     if use_word_embeddings != DONT_USE_OPTION:
         for i in range(0, 300):
             swap_columns(columns, 'vector_embedding_comp_' + str(i), counter)
+    if use_sentence_sentiment != DONT_USE_OPTION or use_sentence_word_embeddings != DONT_USE_OPTION:
+        swap_columns(columns, 'sentences_data', counter)
     swap_columns(columns, 'rating_label', counter)
     return data_set_dataframe[columns]
 
@@ -163,9 +165,22 @@ def create_sentiment_phrases_index_map(sentiment_phrases):
     return {key_list[i]: i for i in range(0, len(key_list))}
 
 
+def get_sentence_data(sentence, movie_summary):
+    """
+    Receives a sentence and returns a tuple containing in the first component the sentence itself,
+    and in the other two components the sentiment score of the sentence and the sum of embeddings of
+    the words in the sentence.
+    :param sentence: a sentence to process as described above.
+    :return: a tuple containing data about the input sentence, as described above.
+    """
+    return [sentence,
+            round(dataset_utils.shift_scale(TextBlob(sentence).sentiment.polarity, -1, 1, 1, 5)),
+            nlp(sentence).vector, dataset_utils.calculate_rouge(movie_summary, sentence, 2)['fScore']]
+
+
 def construct_data_set(dataset_name, data_set_list_of_dicts, use_movie_rating_distribution,
                        use_review_rating_distribution, use_word_embeddings,
-                       use_sentiment_phrases):
+                       use_sentiment_phrases, use_sentence_sentiment, use_sentence_word_embeddings):
     counter = 0
     sentiment_phrases = dict()
     should_compute_sentiment_phrases = dataset_name == 'train' \
@@ -188,6 +203,13 @@ def construct_data_set(dataset_name, data_set_list_of_dicts, use_movie_rating_di
     sentiment_phrases_index_map = create_sentiment_phrases_index_map(sentiment_phrases)
 
     for movie in data_set_list_of_dicts:
+        sentences_data = []
+        review_concatenation = ". ".join([review['text'] for review in movie['reviews']])
+        if use_sentence_sentiment == CREATE_FROM_SCRATCH or use_sentence_word_embeddings == CREATE_FROM_SCRATCH:
+            curr_sentences = review_concatenation.split(".")
+            for sentence in curr_sentences:
+                sentences_data.append(get_sentence_data(sentence, movie['summary']))
+            movie['sentences_data'] = sentences_data
         if use_movie_rating_distribution == CREATE_FROM_SCRATCH \
                 or \
                 use_review_rating_distribution == CREATE_FROM_SCRATCH:
@@ -215,8 +237,6 @@ def construct_data_set(dataset_name, data_set_list_of_dicts, use_movie_rating_di
             movie['average_five_rating_phrase_percent'] = sum([score[5] for score in sentiment_scores]) \
                                                           / \
                                                           len(movie['reviews'])
-        if use_word_embeddings == CREATE_FROM_SCRATCH or use_sentiment_phrases == CREATE_FROM_SCRATCH:
-            review_concatenation = "\n".join([review['text'] for review in movie['reviews']])
         if use_word_embeddings == CREATE_FROM_SCRATCH:
             reviews_average_vector_embedding = nlp(review_concatenation).vector
             # reviews_average_vector_embedding = nlp(review_concatenation).vector / len(movie['reviews'])
@@ -244,11 +264,11 @@ def dataset_exists(dataset_name):
 
 def get_data_set(dataset_name, use_movie_ratings_distribution,
                  use_review_ratings_distribution, use_word_embeddings,
-                 use_sentiment_phrases):
+                 use_sentiment_phrases, use_sentence_sentiment, use_sentence_word_embeddings):
     with open('{}.json'.format(dataset_name), 'r') as input_file:
         dataset = arrange_columns(pd.DataFrame(json.load(input_file)), use_movie_ratings_distribution,
                                   use_review_ratings_distribution, use_word_embeddings,
-                                  use_sentiment_phrases)
+                                  use_sentiment_phrases, use_sentence_sentiment, use_sentence_word_embeddings)
     return dataset_utils.drop_redundant_columns(dataset)
 
 
@@ -290,6 +310,16 @@ parser.add_argument("-sp", "--sentiment_phrases", type=int, choices=[0, 1, 2],
                     default=1,
                     help="Identify sentiment carrying phrases and for each movie's reviews, check "
                          "if they are found in them.")
+parser.add_argument("-ts_ss", "--textual_summarization_sentence_sentiment", type=int, choices=[0, 1, 2],
+                    default=1,
+                    help="Use the sentiment score of each sentence to rank it for deciding whether to "
+                         +
+                         "choose to include it in a textual summary.")
+parser.add_argument("-ts_swe", "--textual_summarization_sentence_word_embeddings", type=int, choices=[0, 1, 2],
+                    default=1,
+                    help="Use the sum of word embeddings of each sentence to rank the sentence to decide whether "
+                         +
+                         "to choose to include it in a textual summary.")
 args = parser.parse_args()
 if not os.path.exists(args.CORPUS_PATH):
     print('Error: the file {} does not exist.'.format(args.CORPUS_PATH))
@@ -310,7 +340,11 @@ if args.movie_rating_distribution == USE_EXISTING \
         or \
         args.word_embeddings == USE_EXISTING \
         or \
-        args.sentiment_phrases == USE_EXISTING:
+        args.sentiment_phrases == USE_EXISTING\
+        or\
+        args.textual_summarization_sentence_sentiment == USE_EXISTING\
+        or\
+        args.textual_summarization_sentence_word_embeddings == USE_EXISTING:
     if not os.path.exists(os.path.join(args.OUTPUT_FILES_PATH, 'train.json')) \
             or \
             not os.path.exists(os.path.join(args.OUTPUT_FILES_PATH, 'gold.json')):
@@ -321,11 +355,15 @@ if args.movie_rating_distribution == USE_EXISTING \
     train_data_set = get_data_set(os.path.join(args.OUTPUT_FILES_PATH, 'train'),
                                   args.movie_rating_distribution,
                                   args.review_rating_distribution,
-                                  args.word_embeddings, args.sentiment_phrases)\
+                                  args.word_embeddings, args.sentiment_phrases,
+                                  args.textual_summarization_sentence_sentiment,
+                                  args.textual_summarization_sentence_word_embeddings)\
                      .to_dict('records')
     gold_data_set = get_data_set('gold', args.movie_rating_distribution,
                                  args.review_rating_distribution,
-                                 args.word_embeddings, args.sentiment_phrases)\
+                                 args.word_embeddings, args.sentiment_phrases,
+                                 args.textual_summarization_sentence_sentiment,
+                                 args.textual_summarization_sentence_word_embeddings)\
                      .to_dict('records')
 else:
     data_sets = dataset_utils.build_data_sets_from_json_file(args.CORPUS_PATH)
@@ -335,11 +373,15 @@ else:
 train_data_set = construct_data_set('train', train_data_set,
                                     args.movie_rating_distribution,
                                     args.review_rating_distribution,
-                                    args.word_embeddings, args.sentiment_phrases)
+                                    args.word_embeddings, args.sentiment_phrases,
+                                    args.textual_summarization_sentence_sentiment,
+                                    args.textual_summarization_sentence_word_embeddings)
 gold_data_set = construct_data_set('gold', gold_data_set,
                                    args.movie_rating_distribution,
                                    args.review_rating_distribution,
-                                   args.word_embeddings, args.sentiment_phrases)
+                                   args.word_embeddings, args.sentiment_phrases,
+                                   args.textual_summarization_sentence_sentiment,
+                                   args.textual_summarization_sentence_word_embeddings)
 with open('train.json', 'w') as output_file:
     json.dump(train_data_set, output_file)
 with open('gold.json', 'w') as output_file:

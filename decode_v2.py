@@ -141,6 +141,8 @@ def get_columns_to_use(input_possible_feature_columns, input_column_dictionary, 
     if not args.word_embeddings:
         curr_columns_to_use = [column_name for column_name in curr_columns_to_use
                                if column_name not in input_column_dictionary['word_embeddings']]
+    if len(curr_columns_to_use) == 0: # No options selected, use all columns by default.
+        curr_columns_to_use = input_possible_feature_columns
     return curr_columns_to_use
 
 
@@ -219,6 +221,10 @@ parser.add_argument("-sp", "--sentiment_phrases", action="store_true",
                     help="Use the presence or lack of presence of identified "
                          +
                          "sentiment carrying phrases.")
+parser.add_argument('-ts_sentiment', '--text_summarization_sentiment', action='store-true',
+                    help='Whether to use sentiment to rank phrases to include in the textual summarization of '
+                         +
+                         'movie reviews.')
 args = parser.parse_args()
 
 if not os.path.exists(args.TRAIN_PATH):
