@@ -2,7 +2,7 @@
 An NLP project concerned with aggregating movie reviews (such as those on Rotten Tomatoes). The project receives 
 
 ## Installation:
-1. Install all needed dependencies. They can all be installed using pip. These dependencies include:
+1. Install all needed dependencies. They can all be installed using 'pip'. These dependencies include:
     * hashlib
     * BitVector
     * numpy
