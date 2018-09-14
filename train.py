@@ -1,6 +1,7 @@
 import argparse
 import json
 import math
+import multiprocessing
 import os
 import hashlib
 from datetime import datetime
@@ -9,6 +10,7 @@ import numpy
 import pandas as pd
 import spacy
 from BitVector import BitVector
+from dask import delayed, compute
 from textblob import TextBlob
 
 from utils import dataset_utils, sentiment_utils
@@ -175,18 +177,80 @@ def get_sentence_data(sentence, movie_summary):
     """
     return [sentence,
             round(dataset_utils.shift_scale(TextBlob(sentence).sentiment.polarity, -1, 1, 1, 5)),
-            nlp(sentence).vector, dataset_utils.calculate_rouge(movie_summary, sentence, 2)['fScore']]
+            [round(float(component), 3) for component in nlp(sentence).vector],
+            dataset_utils.calculate_rouge(dataset_utils.preprocess_text(movie_summary),
+                                          dataset_utils.preprocess_text(sentence), 1)['fScore']]
+
+
+def process_movie(movie, dataset_name,
+                  use_movie_rating_distribution,
+                  use_review_rating_distribution, use_word_embeddings,
+                  use_sentiment_phrases, use_sentence_sentiment, use_sentence_word_embeddings,
+                  sentiment_phrases_index_map):
+    sentences_data = []
+    review_concatenation = ".".join([review['text'] for review in movie['reviews']])
+    if use_sentence_sentiment == CREATE_FROM_SCRATCH or use_sentence_word_embeddings == CREATE_FROM_SCRATCH:
+        curr_sentences = [sentence for sentence in review_concatenation.split(".")
+                          if len(sentence) > 0]
+        sentences_data.extend([result_component for result in
+                               compute([delayed(get_sentence_data)(sentence, movie['summary'])
+                               for sentence in curr_sentences])
+                               for result_component in result[0]])
+        movie['sentences_data'] = sentences_data
+    if use_movie_rating_distribution == CREATE_FROM_SCRATCH \
+            or \
+            use_review_rating_distribution == CREATE_FROM_SCRATCH:
+        sentiment_scores = [sentiment_utils.get_sentiment_score(review['text'], 1, 5)
+                            for review in movie['reviews']]
+    if use_movie_rating_distribution == CREATE_FROM_SCRATCH:
+        movie['one_rating_num'] = len([score[0] for score in sentiment_scores if score[0] == 1])
+        movie['two_rating_num'] = len([score[0] for score in sentiment_scores if score[0] == 2])
+        movie['three_rating_num'] = len([score[0] for score in sentiment_scores if score[0] == 3])
+        movie['four_rating_num'] = len([score[0] for score in sentiment_scores if score[0] == 4])
+        movie['five_rating_num'] = len([score[0] for score in sentiment_scores if score[0] == 5])
+    if use_review_rating_distribution == CREATE_FROM_SCRATCH:
+        movie['average_one_rating_phrase_percent'] = sum([score[1] for score in sentiment_scores]) \
+                                                     / \
+                                                     len(movie['reviews'])
+        movie['average_two_rating_phrase_percent'] = sum([score[2] for score in sentiment_scores]) \
+                                                     / \
+                                                     len(movie['reviews'])
+        movie['average_three_rating_phrase_percent'] = sum([score[3] for score in sentiment_scores]) \
+                                                       / \
+                                                       len(movie['reviews'])
+        movie['average_four_rating_phrase_percent'] = sum([score[4] for score in sentiment_scores]) \
+                                                      / \
+                                                      len(movie['reviews'])
+        movie['average_five_rating_phrase_percent'] = sum([score[5] for score in sentiment_scores]) \
+                                                      / \
+                                                      len(movie['reviews'])
+    if use_word_embeddings == CREATE_FROM_SCRATCH:
+        reviews_average_vector_embedding = nlp(review_concatenation).vector
+        # reviews_average_vector_embedding = nlp(review_concatenation).vector / len(movie['reviews'])
+        for i in range(0, 300):
+            movie['vector_embedding_comp_' + str(i)] = float(reviews_average_vector_embedding[i])
+    if use_sentiment_phrases == CREATE_FROM_SCRATCH:
+        movie['sentiment_phrases_found'] = get_sentiment_phrases_found(sentiment_phrases_index_map,
+                                                                       review_concatenation)
+    movie['rating_label'] = round(float(numpy.mean([review['rating']
+                                                    for review in movie['reviews']])))
+    print("{}: Dataset \'{}\': Processed movie".format(datetime.now(), dataset_name))
+    # counter += 1
+    # print("{}: Dataset \'{}\': Number of movies processed: {}".format(datetime.now(),
+    #                                                                   dataset_name, counter))
+
+    return movie
 
 
 def construct_data_set(dataset_name, data_set_list_of_dicts, use_movie_rating_distribution,
                        use_review_rating_distribution, use_word_embeddings,
                        use_sentiment_phrases, use_sentence_sentiment, use_sentence_word_embeddings):
-    counter = 0
+    counter = 1
     sentiment_phrases = dict()
     should_compute_sentiment_phrases = dataset_name == 'train' \
-                                       and\
-                                       not os.path.exists(SENTIMENT_PHRASES_FILE_NAME)\
-                                       and\
+                                       and \
+                                       not os.path.exists(SENTIMENT_PHRASES_FILE_NAME) \
+                                       and \
                                        use_sentiment_phrases == CREATE_FROM_SCRATCH
     if not should_compute_sentiment_phrases and os.path.exists(SENTIMENT_PHRASES_FILE_NAME):
         print('{}: Start of loading of sentiment phrases.'.format(datetime.now()))
@@ -202,55 +266,20 @@ def construct_data_set(dataset_name, data_set_list_of_dicts, use_movie_rating_di
         print('{}: End of computation of sentiment phrases.'.format(datetime.now()))
     sentiment_phrases_index_map = create_sentiment_phrases_index_map(sentiment_phrases)
 
+    results = []
     for movie in data_set_list_of_dicts:
-        sentences_data = []
-        review_concatenation = ". ".join([review['text'] for review in movie['reviews']])
-        if use_sentence_sentiment == CREATE_FROM_SCRATCH or use_sentence_word_embeddings == CREATE_FROM_SCRATCH:
-            curr_sentences = review_concatenation.split(".")
-            for sentence in curr_sentences:
-                sentences_data.append(get_sentence_data(sentence, movie['summary']))
-            movie['sentences_data'] = sentences_data
-        if use_movie_rating_distribution == CREATE_FROM_SCRATCH \
-                or \
-                use_review_rating_distribution == CREATE_FROM_SCRATCH:
-                    sentiment_scores = [sentiment_utils.get_sentiment_score(review['text'], 1, 5)
-                                        for review in movie['reviews']]
-        if use_movie_rating_distribution == CREATE_FROM_SCRATCH:
-            movie['one_rating_num'] = len([score[0] for score in sentiment_scores if score[0] == 1])
-            movie['two_rating_num'] = len([score[0] for score in sentiment_scores if score[0] == 2])
-            movie['three_rating_num'] = len([score[0] for score in sentiment_scores if score[0] == 3])
-            movie['four_rating_num'] = len([score[0] for score in sentiment_scores if score[0] == 4])
-            movie['five_rating_num'] = len([score[0] for score in sentiment_scores if score[0] == 5])
-        if use_review_rating_distribution == CREATE_FROM_SCRATCH:
-            movie['average_one_rating_phrase_percent'] = sum([score[1] for score in sentiment_scores]) \
-                                                         / \
-                                                         len(movie['reviews'])
-            movie['average_two_rating_phrase_percent'] = sum([score[2] for score in sentiment_scores]) \
-                                                         / \
-                                                         len(movie['reviews'])
-            movie['average_three_rating_phrase_percent'] = sum([score[3] for score in sentiment_scores]) \
-                                                           / \
-                                                           len(movie['reviews'])
-            movie['average_four_rating_phrase_percent'] = sum([score[4] for score in sentiment_scores]) \
-                                                          / \
-                                                          len(movie['reviews'])
-            movie['average_five_rating_phrase_percent'] = sum([score[5] for score in sentiment_scores]) \
-                                                          / \
-                                                          len(movie['reviews'])
-        if use_word_embeddings == CREATE_FROM_SCRATCH:
-            reviews_average_vector_embedding = nlp(review_concatenation).vector
-            # reviews_average_vector_embedding = nlp(review_concatenation).vector / len(movie['reviews'])
-            for i in range(0, 300):
-                movie['vector_embedding_comp_' + str(i)] = float(reviews_average_vector_embedding[i])
-        if use_sentiment_phrases == CREATE_FROM_SCRATCH:
-            movie['sentiment_phrases_found'] = get_sentiment_phrases_found(sentiment_phrases_index_map,
-                                                                           review_concatenation)
-        movie['rating_label'] = round(float(numpy.mean([review['rating']
-                                                        for review in movie['reviews']])))
+        results.append(delayed(process_movie)(movie, dataset_name, use_movie_rating_distribution,
+                                              use_review_rating_distribution, use_word_embeddings,
+                                              use_sentiment_phrases, use_sentence_sentiment,
+                                              use_sentence_word_embeddings,
+                                              sentiment_phrases_index_map))
+        print("{}: Added task for movie No. {}".format(datetime.now(), counter))
         counter += 1
-        print("{}: Dataset \'{}\': Number of movies processed: {}".format(datetime.now(),
-                                                                          dataset_name, counter))
-    return data_set_list_of_dicts
+    results = compute(results)[0]
+
+    # for movie in data_set_list_of_dicts:
+
+    return [movie for movie in results]
 
 
 def fill_values(dataframe, column_name, column_values):
@@ -340,10 +369,10 @@ if args.movie_rating_distribution == USE_EXISTING \
         or \
         args.word_embeddings == USE_EXISTING \
         or \
-        args.sentiment_phrases == USE_EXISTING\
-        or\
-        args.textual_summarization_sentence_sentiment == USE_EXISTING\
-        or\
+        args.sentiment_phrases == USE_EXISTING \
+        or \
+        args.textual_summarization_sentence_sentiment == USE_EXISTING \
+        or \
         args.textual_summarization_sentence_word_embeddings == USE_EXISTING:
     if not os.path.exists(os.path.join(args.OUTPUT_FILES_PATH, 'train.json')) \
             or \
@@ -357,14 +386,14 @@ if args.movie_rating_distribution == USE_EXISTING \
                                   args.review_rating_distribution,
                                   args.word_embeddings, args.sentiment_phrases,
                                   args.textual_summarization_sentence_sentiment,
-                                  args.textual_summarization_sentence_word_embeddings)\
-                     .to_dict('records')
+                                  args.textual_summarization_sentence_word_embeddings) \
+        .to_dict('records')
     gold_data_set = get_data_set('gold', args.movie_rating_distribution,
                                  args.review_rating_distribution,
                                  args.word_embeddings, args.sentiment_phrases,
                                  args.textual_summarization_sentence_sentiment,
-                                 args.textual_summarization_sentence_word_embeddings)\
-                     .to_dict('records')
+                                 args.textual_summarization_sentence_word_embeddings) \
+        .to_dict('records')
 else:
     data_sets = dataset_utils.build_data_sets_from_json_file(args.CORPUS_PATH)
     train_data_set = data_sets['train']
@@ -376,13 +405,13 @@ train_data_set = construct_data_set('train', train_data_set,
                                     args.word_embeddings, args.sentiment_phrases,
                                     args.textual_summarization_sentence_sentiment,
                                     args.textual_summarization_sentence_word_embeddings)
+with open(os.path.join(args.OUTPUT_FILES_PATH, 'train.json'), 'w') as output_file:
+    json.dump(train_data_set, output_file)
 gold_data_set = construct_data_set('gold', gold_data_set,
                                    args.movie_rating_distribution,
                                    args.review_rating_distribution,
                                    args.word_embeddings, args.sentiment_phrases,
                                    args.textual_summarization_sentence_sentiment,
                                    args.textual_summarization_sentence_word_embeddings)
-with open('train.json', 'w') as output_file:
-    json.dump(train_data_set, output_file)
-with open('gold.json', 'w') as output_file:
-    json.dump(gold_data_set, output_file)
+with open(os.path.join(args.OUTPUT_FILES_PATH, 'gold.json'), 'w') as output_file:
+   json.dump(gold_data_set, output_file)

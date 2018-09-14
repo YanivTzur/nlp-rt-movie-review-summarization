@@ -1,13 +1,8 @@
 import os
 import argparse
-from itertools import chain, combinations
 import re
 
-def powerset(iterable):
-    "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
-    s = list(iterable)
-    return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
-
+from utils import collection_utils
 
 parser = argparse.ArgumentParser(description="Conducts a number of experiments equal to the number input by "
                                              "the user. In each experiment, a single trial is conducted for "
@@ -16,7 +11,7 @@ parser = argparse.ArgumentParser(description="Conducts a number of experiments e
                                              "The program writes the result of each trial, and the mean "
                                              +
                                              "of all trials with the same set of parameters to an output file.")
-parser.add_argument("NUM_OF_EXPERIMENTS", help=("The number of times to run each trial."),
+parser.add_argument("NUM_OF_EXPERIMENTS", help="The number of times to run each trial.",
                     type=int)
 parser.add_argument("OUTPUT_FILE_PATH",
                     help="The path of in which to put the output file, including the output file's "
@@ -28,13 +23,9 @@ if not os.path.exists(output_dir_name) or not os.path.isdir(output_dir_name):
     print("Error: no directory exists at the path {}.".format(output_dir_name))
 
 possible_parameters = ['-mrd', '-rrd', '-we', '-sp']
-possible_parameters_powerset = list(powerset(possible_parameters))
+possible_parameters_powerset = list(collection_utils.powerset(possible_parameters))
 possible_parameters_powerset.remove(())
-possible_parameters_powerset.remove(('-mrd',))
-possible_parameters_powerset.remove(('-rrd',))
-possible_parameters_powerset.remove(('-we',))
 results_dictionary = dict()
-mean_sentiment_statistics = (-1,-1)
 
 
 def get_sentiment_statistics(sentiment_eval_file_lines):
