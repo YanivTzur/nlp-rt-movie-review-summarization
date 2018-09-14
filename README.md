@@ -26,7 +26,7 @@ The project consists of 3 main scripts that you will need to use to make full us
 
 * train.py:
   
-  Similarly to what its name suggests, this script is used to generate train and gold sets from the complete corpus (which can be found [here](http://google.com).
+  Similarly to what its name suggests, this script is used to generate train and gold sets from the complete corpus (which can be found [here](https://www.dropbox.com/sh/xjq8d28bf1u17rx/AABTfCDGp5K9S-uhByyEu6YHa?dl=0).
   
 * decode.py:
 
