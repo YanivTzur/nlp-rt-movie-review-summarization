@@ -20,3 +20,17 @@ An NLP project concerned with aggregating movie reviews (such as those on Rotten
    `python -m spacy download en_core_web_lg `
 
    from a command line window / terminal to download the corpus required for the spacy NLP library to train word embeddings.
+
+## Project Structure:
+The project consists of 3 main scripts that you will need to use to make full use of the project and to evaluate its results. These scripts are:
+
+* train.py:
+  
+  Similarly to what its name suggests, this script is used to generate train and gold sets from the complete corpus (which can be found [here](http://google.com).
+  
+* decode.py:
+
+
+* eval.py:
+
+Additionally, there are some more scripts that contain code used by the above-mentioned 3 main scripts. Also there
