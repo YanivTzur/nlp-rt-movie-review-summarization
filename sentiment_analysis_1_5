@@ -1,0 +1,63 @@
+Parameter Combination { -mrd }:
+Experiment No. 0:
+Accuracy: 0.6575192096597146
+MAE: 0.37371304283234924
+Parameter Combination { -rrd }:
+Experiment No. 0:
+Accuracy: 0.677277716794731
+MAE: 0.30846218330849484
+Parameter Combination { -we }:
+Experiment No. 0:
+Accuracy: 0.7453347969264544
+MAE: 1.896437083011061
+Parameter Combination { -sp }:
+Experiment No. 0:
+Accuracy: 0.535675082327113
+MAE: 0.06355182610500104
+Parameter Combination { -mrd -rrd }:
+Experiment No. 0:
+Accuracy: 0.6871569703622393
+MAE: 0.24646843578448943
+Parameter Combination { -mrd -we }:
+Experiment No. 0:
+Accuracy: 0.7596048298572997
+MAE: 3.1634173756657673
+Parameter Combination { -mrd -sp }:
+Experiment No. 0:
+Accuracy: 0.6520307354555434
+MAE: 1.4484895450143687
+Parameter Combination { -rrd -we }:
+Experiment No. 0:
+Accuracy: 0.7628979143798024
+MAE: 2.145439119614908
+Parameter Combination { -rrd -sp }:
+Experiment No. 0:
+Accuracy: 0.677277716794731
+MAE: 0.3084621734831192
+Parameter Combination { -we -sp }:
+Experiment No. 0:
+Accuracy: 0.7683863885839737
+MAE: 1.6433946358165594
+Parameter Combination { -mrd -rrd -we }:
+Experiment No. 0:
+Accuracy: 0.7837541163556532
+MAE: 1.9589403057342465
+Parameter Combination { -mrd -rrd -sp }:
+Experiment No. 0:
+Accuracy: 0.6838638858397366
+MAE: 0.2467299774566583
+Parameter Combination { -mrd -we -sp }:
+Experiment No. 0:
+Accuracy: 0.7672886937431395
+MAE: 2.086175735881328
+Parameter Combination { -rrd -we -sp }:
+Experiment No. 0:
+Accuracy: 0.7650933040614709
+MAE: 1.3875021615826244
+Parameter Combination { -mrd -rrd -we -sp }:
+Experiment No. 0:
+Accuracy: 0.7782656421514819
+MAE: 3.0998620910285672
+Mean Accuracy: 0.7782656421514819
+Mean MAE: 3.0998620910285672
+

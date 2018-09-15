@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description="Conducts a number of experiments e
                                              "The program writes the result of each trial, and the mean "
                                              +
                                              "of all trials with the same set of parameters to an output file.")
+parser.add_argument("DECODED_DATA_FILE_PATH", help="The path in which to save decoded data.")
 parser.add_argument("NUM_OF_EXPERIMENTS", help="The number of times to run each trial.",
                     type=int)
 parser.add_argument("OUTPUT_FILE_PATH",
@@ -36,33 +37,67 @@ def get_sentiment_statistics(sentiment_eval_file_lines):
     return eval_accuracy, eval_mae
 
 
+# Create new files/truncate existing ones.
+with open(os.path.join(args.OUTPUT_FILE_PATH, 'sentiment_analysis_1_5'), 'w') as sentiment_statistics_file:
+    sentiment_statistics_file.truncate(0)
+with open(os.path.join(args.OUTPUT_FILE_PATH, 'sentiment_analysis_1_3'), 'w') as sentiment_statistics_file:
+    sentiment_statistics_file.truncate(0)
+
 for parameter_combination in possible_parameters_powerset:
-    results_dictionary[parameter_combination] = []
-    with open(args.OUTPUT_FILE_PATH, 'a') as sentiment_statistics_file:
+    results_dictionary[parameter_combination] = {'1_5': [], '1_3': []}
+    with open(os.path.join(args.OUTPUT_FILE_PATH, 'sentiment_analysis_1_5'), 'a') as sentiment_statistics_file:
+        sentiment_statistics_file.write('Parameter Combination {{ {} }}:\n'.format(' '.join(parameter_combination)))
+    with open(os.path.join(args.OUTPUT_FILE_PATH, 'sentiment_analysis_1_3'), 'a') as sentiment_statistics_file:
         sentiment_statistics_file.write('Parameter Combination {{ {} }}:\n'.format(' '.join(parameter_combination)))
     for i in range(0, args.NUM_OF_EXPERIMENTS):
-        results_dictionary[parameter_combination].append({'accuracy': -1.0, 'mae': -1.0})
-        with open(args.OUTPUT_FILE_PATH, 'a') as sentiment_statistics_file:
+        for key in results_dictionary[parameter_combination]:
+            results_dictionary[parameter_combination][key].append({'accuracy': -1.0, 'mae': -1.0})
+        with open(os.path.join(args.OUTPUT_FILE_PATH, 'sentiment_analysis_1_5'), 'a') as sentiment_statistics_file:
             sentiment_statistics_file.write('Experiment No. {}:\n'.format(str(i)))
-        os.system(r'python decode.py train.json gold.json C:\implementation ' + ' '.join(parameter_combination))
-        os.system(r'python eval.py decoded.json C:\implementation 1 5')
+        with open(os.path.join(args.OUTPUT_FILE_PATH, 'sentiment_analysis_1_3'), 'a') as sentiment_statistics_file:
+            sentiment_statistics_file.write('Experiment No. {}:\n'.format(str(i)))
+        os.system(r'python decode.py train.json gold.json ' + args.DECODED_DATA_FILE_PATH + r' 2 --use_existing '
+                  +
+                  ' '.join(parameter_combination))
+        os.system(r'python eval.py ' + args.DECODED_DATA_FILE_PATH + r' .\ 1 5')
         with open('sentiment_analysis.eval', 'r') as sentiment_eval_file:
             accuracy, mae = get_sentiment_statistics(sentiment_eval_file.readlines())
-            results_dictionary[parameter_combination][i]['accuracy'] = accuracy
-            results_dictionary[parameter_combination][i]['mae'] = mae
-        with open(args.OUTPUT_FILE_PATH, 'a') as sentiment_statistics_file:
+            results_dictionary[parameter_combination]['1_5'][i]['accuracy'] = accuracy
+            results_dictionary[parameter_combination]['1_5'][i]['mae'] = mae
+        with open(os.path.join(args.OUTPUT_FILE_PATH, 'sentiment_analysis_1_5'), 'a') as sentiment_statistics_file:
             sentiment_statistics_file.write(('Accuracy: {}\n'
                                             +
                                             'MAE: {}\n').format(accuracy, mae))
-    with open(args.OUTPUT_FILE_PATH, 'a') as sentiment_statistics_file:
-        sentiment_statistics_file.write(('Mean Accuracy: {}\n'
-                                        +
-                                        'Mean MAE: {}\n\n')
-                                        .format(sum(results_dictionary[parameter_combination][i]['accuracy']
-                                                    for i in range(0, args.NUM_OF_EXPERIMENTS))
-                                                /
-                                                args.NUM_OF_EXPERIMENTS,
-                                                sum(results_dictionary[parameter_combination][i]['mae']
-                                                    for i in range(0, args.NUM_OF_EXPERIMENTS))
-                                                /
-                                                args.NUM_OF_EXPERIMENTS))
+        os.system(r'python eval.py ' + args.DECODED_DATA_FILE_PATH + r' .\ 1 3')
+        with open('sentiment_analysis.eval', 'r') as sentiment_eval_file:
+            accuracy, mae = get_sentiment_statistics(sentiment_eval_file.readlines())
+            results_dictionary[parameter_combination]['1_3'][i]['accuracy'] = accuracy
+            results_dictionary[parameter_combination]['1_3'][i]['mae'] = mae
+        with open(os.path.join(args.OUTPUT_FILE_PATH, 'sentiment_analysis_1_3'), 'a') as sentiment_statistics_file:
+            sentiment_statistics_file.write(('Accuracy: {}\n'
+                                            +
+                                            'MAE: {}\n').format(accuracy, mae))
+with open(os.path.join(args.OUTPUT_FILE_PATH, 'sentiment_analysis_1_5'), 'a') as sentiment_statistics_file:
+    sentiment_statistics_file.write(('Mean Accuracy: {}\n'
+                                    +
+                                    'Mean MAE: {}\n\n')
+                                    .format(sum(results_dictionary[parameter_combination]['1_5'][i]['accuracy']
+                                                for i in range(0, args.NUM_OF_EXPERIMENTS))
+                                            /
+                                            args.NUM_OF_EXPERIMENTS,
+                                            sum(results_dictionary[parameter_combination]['1_5'][i]['mae']
+                                                for i in range(0, args.NUM_OF_EXPERIMENTS))
+                                            /
+                                            args.NUM_OF_EXPERIMENTS))
+with open(os.path.join(args.OUTPUT_FILE_PATH, 'sentiment_analysis_1_3'), 'a') as sentiment_statistics_file:
+    sentiment_statistics_file.write(('Mean Accuracy: {}\n'
+                                     +
+                                     'Mean MAE: {}\n\n')
+                                    .format(sum(results_dictionary[parameter_combination]['1_3'][i]['accuracy']
+                                                for i in range(0, args.NUM_OF_EXPERIMENTS))
+                                            /
+                                            args.NUM_OF_EXPERIMENTS,
+                                            sum(results_dictionary[parameter_combination]['1_3'][i]['mae']
+                                                for i in range(0, args.NUM_OF_EXPERIMENTS))
+                                            /
+                                            args.NUM_OF_EXPERIMENTS))

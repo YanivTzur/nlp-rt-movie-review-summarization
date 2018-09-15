@@ -1,7 +1,6 @@
 import argparse
 import json
 import math
-import multiprocessing
 import os
 import hashlib
 from datetime import datetime
@@ -85,6 +84,7 @@ def arrange_columns(data_set_dataframe, use_movie_ratings_distribution,
 def write_sentiment_phrases_to_disk(sentiment_phrases):
     """
     Writes the sentiment phrases computed based on the training data set in a formatted fashion.
+
     :param sentiment_phrases: the sentiment phrases computed based on the training set.
     """
     with open(SENTIMENT_PHRASES_FILE_NAME, 'w') as output_sentiment_phrases_file:
@@ -95,6 +95,7 @@ def compute_sentiment_phrases(input_train_data_set):
     """
     Identifies the sentiment phrases in the concatenation of all reviews of eacj movie,
     updates the count of sentiment phrases accordingly, and returns it.
+
     :param input_train_data_set: the list of movies and associated data in the training data set.
     :return: the dictionary of counts of sentiment phrases based on the training data set.
     """
@@ -147,6 +148,7 @@ def get_sentiment_phrases_found(sentiment_phrases_index, review_concatenation):
     set to 1 in a generated bit vector.
     Finally, the method converts the bit vector into a string, hashes it and returns
     the hash value computed.
+
     :param sentiment_phrases_index: A dictionary between each sentiment phrase and
                                     an index assigned to it.
     :param review_concatenation: A concatenation of all reviews of a given movie.
@@ -172,12 +174,13 @@ def get_sentence_data(sentence, movie_summary):
     Receives a sentence and returns a tuple containing in the first component the sentence itself,
     and in the other two components the sentiment score of the sentence and the sum of embeddings of
     the words in the sentence.
+
     :param sentence: a sentence to process as described above.
     :return: a tuple containing data about the input sentence, as described above.
     """
     return [sentence,
             round(dataset_utils.shift_scale(TextBlob(sentence).sentiment.polarity, -1, 1, 1, 5)),
-            [round(float(component), 3) for component in nlp(sentence).vector],
+            [round(float(component), 3) for component in nlp(sentence).vector[:35]],
             dataset_utils.calculate_rouge(dataset_utils.preprocess_text(movie_summary),
                                           dataset_utils.preprocess_text(sentence), 1)['fScore']]
 
@@ -354,7 +357,7 @@ if not os.path.exists(args.CORPUS_PATH):
     print('Error: the file {} does not exist.'.format(args.CORPUS_PATH))
     exit(1)
 elif not os.path.exists(args.OUTPUT_FILES_PATH):
-    print('Error: the file {} does not exist.'.format(args.OUTPUT_FILES_PATH))
+    print('Error: the directory {} does not exist.'.format(args.OUTPUT_FILES_PATH))
     exit(1)
 elif not os.path.isdir(args.OUTPUT_FILES_PATH):
     print('Error: the argument OUTPUT_FILES_PATH must be a directory.'.format(args.OUTPUT_FILES_PATH))
@@ -399,7 +402,7 @@ else:
     train_data_set = data_sets['train']
     gold_data_set = data_sets['gold']
 
-train_data_set = construct_data_set('train', train_data_set,
+train_data_set = construct_data_set('train', train_data_set[:2],
                                     args.movie_rating_distribution,
                                     args.review_rating_distribution,
                                     args.word_embeddings, args.sentiment_phrases,
@@ -407,11 +410,11 @@ train_data_set = construct_data_set('train', train_data_set,
                                     args.textual_summarization_sentence_word_embeddings)
 with open(os.path.join(args.OUTPUT_FILES_PATH, 'train.json'), 'w') as output_file:
     json.dump(train_data_set, output_file)
-gold_data_set = construct_data_set('gold', gold_data_set,
+gold_data_set = construct_data_set('gold', gold_data_set[:2],
                                    args.movie_rating_distribution,
                                    args.review_rating_distribution,
                                    args.word_embeddings, args.sentiment_phrases,
                                    args.textual_summarization_sentence_sentiment,
                                    args.textual_summarization_sentence_word_embeddings)
 with open(os.path.join(args.OUTPUT_FILES_PATH, 'gold.json'), 'w') as output_file:
-   json.dump(gold_data_set, output_file)
+    json.dump(gold_data_set, output_file)

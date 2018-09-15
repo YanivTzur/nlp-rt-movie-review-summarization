@@ -1,6 +1,8 @@
 from numpy.random import seed
+
 seed(1)
 from tensorflow import set_random_seed
+
 set_random_seed(2)
 import argparse
 import json
@@ -139,7 +141,7 @@ def get_columns_to_use(input_possible_feature_columns, input_column_dictionary, 
     if not args.word_embeddings:
         curr_columns_to_use = [column_name for column_name in curr_columns_to_use
                                if column_name not in input_column_dictionary['word_embeddings']]
-    if len(curr_columns_to_use) == 0: # No options selected, use all columns by default.
+    if len(curr_columns_to_use) == 0:  # No options selected, use all columns by default.
         curr_columns_to_use = input_possible_feature_columns
     return curr_columns_to_use
 
@@ -147,15 +149,15 @@ def get_columns_to_use(input_possible_feature_columns, input_column_dictionary, 
 def get_sentence_data_list(input_dataset):
     sentence_data_list = []
     for movie in input_dataset:
-        for sentence_data in movie['sentences_data']:
-            curr_sentence_data = dict()
-            curr_sentence_data['text'] = sentence_data[0]
-            curr_sentence_data['id'] = movie['id']
-            curr_sentence_data['sentence_sentiment'] = sentence_data[1]
-            for i in range(0, len(sentence_data[2])):
-                curr_sentence_data['vector_embedding_comp_' + str(i)] = sentence_data[2][i]
-            curr_sentence_data['rouge_score'] = sentence_data[3]
-            sentence_data_list.append(curr_sentence_data)
+        sentence_data = movie['sentences_data']
+        curr_sentence_data = dict()
+        curr_sentence_data['text'] = sentence_data[0]
+        curr_sentence_data['id'] = movie['id']
+        curr_sentence_data['sentence_sentiment'] = sentence_data[1]
+        for i in range(0, len(sentence_data[2])):
+            curr_sentence_data['vector_embedding_comp_' + str(i)] = sentence_data[2][i]
+        curr_sentence_data['rouge_score'] = sentence_data[3]
+        sentence_data_list.append(curr_sentence_data)
     return sentence_data_list
 
 
@@ -172,15 +174,16 @@ def generate_summaries_from_ranked_sentences(test_sentences_df, y_pred, number_o
     :return: a dictionary mapping between the id of each movie and its generated summary.
     """
     movie_to_sentences_dict = dict()
-    test_sentences_df_with_pred = pd.concat(test_sentences_df, y_pred)
-    test_sentences_df_with_pred.sort_values(str(len(test_sentences_df_with_pred.columns)), ascending=False)
-    movie_id_column = list(test_sentences_df_with_pred.filter(items=['id'], axis=1))
-    sentence_text_column = list(test_sentences_df_with_pred.filter(items=['text'], axis=1))
+    test_sentences_df_with_pred = pd.concat(objs=[test_sentences_df, pd.DataFrame(y_pred)], axis=1)
+    sort_label = test_sentences_df_with_pred.columns[len(test_sentences_df_with_pred.columns) - 1]
+    test_sentences_df_with_pred = test_sentences_df_with_pred.sort_values(by=[sort_label],ascending=False)
+    movie_id_column = test_sentences_df_with_pred.filter(items=['id'], axis=1)
+    sentence_text_column = test_sentences_df_with_pred.filter(items=['text'], axis=1)
     for i in range(0, len(movie_id_column)):
-        if not movie_id_column[i] in movie_to_sentences_dict.keys():
-            movie_to_sentences_dict[movie_id_column[i]] = []
-        if len(movie_to_sentences_dict[movie_id_column[i]]) < number_of_sentences_in_summary:
-            movie_to_sentences_dict[movie_id_column[i]].append(sentence_text_column[i])
+        if not movie_id_column.iloc[i, 0] in movie_to_sentences_dict.keys():
+            movie_to_sentences_dict[movie_id_column.iloc[i, 0]] = []
+        if len(movie_to_sentences_dict[movie_id_column.iloc[i, 0]]) < number_of_sentences_in_summary:
+            movie_to_sentences_dict[movie_id_column.iloc[i, 0]].append(sentence_text_column.iloc[i, 0])
     return {movie_id: ". ".join(movie_to_sentences_dict[movie_id]) for movie_id in movie_to_sentences_dict.keys()}
 
 
@@ -206,6 +209,7 @@ def sort_summaries_by_input_movie_id_order(movie_id_column, summaries):
 
 def create_summaries(movie_id_column,
                      input_training_set, input_gold_set,
+                     use_existing,
                      use_sentence_sentiment_score, use_word_embeddings,
                      number_of_sentences_in_summary):
     # If no flags for summary creation have been set, return a list of dummy, empty summaries.
@@ -218,13 +222,13 @@ def create_summaries(movie_id_column,
 
     possible_sentence_feature_columns = ['sentence_sentiment']
     possible_sentence_feature_columns.extend([''.join(['vector_embedding_comp_', str(i)])
-                                    for i in range(0, 300)])
+                                              for i in range(0, 35)])
 
     sentence_data_columns = possible_sentence_feature_columns[:]
     if not use_sentence_sentiment_score:
         sentence_data_columns.remove('sentence_sentiment')
     if not use_word_embeddings:
-        for i in range(0, 300):
+        for i in range(0, 35):
             sentence_data_columns.remove(''.join(['vector_embedding_comp_', str(i)]))
 
     sentence_X_train = train_sentences_data_df.filter(items=sentence_data_columns, axis=1)
@@ -239,27 +243,44 @@ def create_summaries(movie_id_column,
     sentence_rouge_score_regressor = Sequential()
 
     # Adding the input layer
-    sentence_rouge_score_regressor.add(Dense(activation='relu', input_dim=len(sentence_data_columns), units=len(sentence_data_columns),
-                                  kernel_initializer='uniform'))
+    sentence_rouge_score_regressor.add(Dense(activation='relu',
+                                             input_dim=len(sentence_data_columns), units=len(sentence_data_columns),
+                                             kernel_initializer='uniform'))
 
     # Adding the first hidden layer
-    sentence_rouge_score_regressor.add(Dense(activation='relu', units=len(sentence_data_columns), kernel_initializer='uniform'))
+    sentence_rouge_score_regressor.add(Dense(activation='relu',
+                                             units=len(sentence_data_columns),
+                                             kernel_initializer='uniform'))
     # Adding the second hidden layer
-    sentence_rouge_score_regressor.add(Dense(activation='relu', units=len(sentence_data_columns), kernel_initializer='uniform'))
+    sentence_rouge_score_regressor.add(Dense(activation='relu',
+                                             units=len(sentence_data_columns),
+                                             kernel_initializer='uniform'))
     # Adding the third hidden layer
-    sentence_rouge_score_regressor.add(Dense(activation='relu', units=len(sentence_data_columns), kernel_initializer='uniform'))
+    sentence_rouge_score_regressor.add(Dense(activation='relu',
+                                             units=len(sentence_data_columns),
+                                             kernel_initializer='uniform'))
 
     # Adding the output layer
-    sentence_rouge_score_regressor.add(Dense(activation='sigmoid', units=1, kernel_initializer='uniform'))
+    sentence_rouge_score_regressor.add(Dense(activation='sigmoid',
+                                             units=1,
+                                             kernel_initializer='uniform'))
 
     # Compiling the ANN
     sentence_rouge_score_regressor.compile(optimizer='adam', loss='mean_absolute_error', metrics=['accuracy'])
 
     print("{}: Start of ranking of sentences".format(datetime.now()))
 
-    # Fitting the ANN to the Training set
-    sentence_rouge_score_regressor.fit(sentence_X_train, sentence_y_train, batch_size=10, epochs=10)
-    sentence_y_pred = classifier.predict(sentence_X_test)
+    if use_existing and os.path.exists(get_existing_summary_gen_model_file_name(use_sentence_sentiment_score,
+                                                                                use_word_embeddings)):
+        sentence_rouge_score_regressor \
+            .load_weights(get_existing_summary_gen_model_file_name(use_sentence_sentiment_score, use_word_embeddings))
+    else:
+        # Fitting the ANN to the Training set
+        sentence_rouge_score_regressor.fit(sentence_X_train, sentence_y_train, batch_size=10, epochs=10)
+        sentence_rouge_score_regressor.save(get_existing_summary_gen_model_file_name(use_sentence_sentiment_score,
+                                                                                     use_word_embeddings))
+
+    sentence_y_pred = sentence_rouge_score_regressor.predict(sentence_X_test)
 
     print("{}: End of ranking of sentences".format(datetime.now()))
 
@@ -296,6 +317,41 @@ def create_decoded_items_list(id_column, y_sentiment_pred, y_sentiment_ground_tr
                        'predicted_summary': y_summary_pred[i],
                        'ground_truth_summary': y_summary_ground_truth[i]})
     return result
+
+
+def get_existing_sentiment_model_file_name(args):
+    """
+    Returns the name that is supposed to be used for the file of a sentiment analysis model saved to disk.
+
+    :param args: the command line arguments entered by the user, to use for constructing the name.
+    :return: the name that is supposed to be used for the file of a sentiment analysis model saved to disk.
+    """
+    options = []
+    if args.movie_rating_distribution:
+        options.append('mrd')
+    if args.review_rating_distribution:
+        options.append('rrd')
+    if args.word_embeddings:
+        options.append('we')
+    if args.sentiment_phrases:
+        options.append('sp')
+    return '.'.join(['_'.join(options), 'model'])
+
+
+def get_existing_summary_gen_model_file_name(use_sentence_sentiment,
+                                             use_sentence_word_embeddings):
+    """
+    Returns the name that is supposed to be used for the file of a summary generation model saved to disk.
+
+    :param args: the command line arguments entered by the user, to use for constructing the name.
+    :return: the name that is supposed to be used for the file of a summary generation model saved to disk.
+    """
+    options = []
+    if use_sentence_sentiment:
+        options.append('ts_ss')
+    if use_sentence_word_embeddings:
+        options.append('ts_swe')
+    return '.'.join(['_'.join(options), 'model'])
 
 
 parser = argparse.ArgumentParser(description='Receives a training set and a gold set which is '
@@ -357,6 +413,11 @@ parser.add_argument("-ts_swe", "--textual_summarization_sentence_word_embeddings
                     help="Use the sum of word embeddings of each sentence to rank the sentence to decide whether "
                          +
                          "to choose to include it in a textual summary.")
+parser.add_argument("--use_existing", action="store_true",
+                    default=False,
+                    help="Whether to use an existing model from a file if it exists. If not set, trains a new model "
+                         +
+                         "from scratch.")
 
 args = parser.parse_args()
 
@@ -365,9 +426,6 @@ if not os.path.exists(args.TRAIN_PATH):
     exit(1)
 elif not os.path.exists(args.GOLD_PATH):
     print('Error: the file {} does not exist.'.format(args.CORPUS_PATH))
-    exit(1)
-elif not os.path.exists(os.path.dirname(args.OUTPUT_FILE_PATH)):
-    print('Error: the directory {} does not exist.'.format(os.path.dirname(args.OUTPUT_FILE_PATH)))
     exit(1)
 
 with open(args.TRAIN_PATH, 'r') as train_file:
@@ -395,13 +453,10 @@ possible_feature_columns = [column_name for key in column_dictionary.keys()
                             for column_name in column_dictionary[key]]
 
 columns_to_use = get_columns_to_use(possible_feature_columns, column_dictionary, args)
-print("Columns used: {}".format(columns_to_use))
 
 X_train = train_data_set.filter(items=columns_to_use, axis=1)
 y_train = train_data_set.loc[:, 'rating_label'].values
-print("y_train before normalizing: {}".format(y_train))
 y_train = [dataset_utils.shift_scale(old_value, 1, 5, 0, 1) for old_value in y_train]
-print("y_train after normalizing: {}".format(y_train))
 
 X_test = gold_data_set.filter(items=columns_to_use, axis=1)
 y_ground_truth = gold_data_set.loc[:, 'rating_label'].values
@@ -410,12 +465,6 @@ print("{}: Start of classification".format(datetime.now()))
 sc_X = StandardScaler()
 X_train = sc_X.fit_transform(X_train)
 X_test = sc_X.transform(X_test)
-# sc_y = StandardScaler()
-# y_train = sc_y.fit_transform(y_train.reshape(-1, 1)).ravel()
-
-# classifier = RandomForestClassifier(n_estimators=100, criterion='entropy', random_state=0,
-#                                     verbose=3, n_jobs=-1)
-# classifier.fit(X_train, y_train)
 
 # Predicting sentiment scores
 
@@ -438,14 +487,20 @@ classifier.add(Dense(activation='sigmoid', units=1, kernel_initializer='uniform'
 # Compiling the ANN
 classifier.compile(optimizer='adam', loss='mean_absolute_error', metrics=['accuracy'])
 
-# Fitting the ANN to the Training set
-classifier.fit(X_train, y_train, batch_size=10, epochs=10)
+# Load existing model from disk if it exists and user chose to do so.
+if args.use_existing and os.path.exists(get_existing_sentiment_model_file_name(args)):
+    classifier.load_weights(get_existing_sentiment_model_file_name(args))
+# Train a model from scratch if no pre-trained model exists on disk or if the user chose to do so.
+else:
+    # Fitting the ANN to the Training set
+    classifier.fit(X_train, y_train, batch_size=10, epochs=10)
+
+    # Save the model to disk.
+    classifier.save_weights(get_existing_sentiment_model_file_name(args))
 
 # Predicting the Test set results
 y_pred = classifier.predict(X_test)
-print("y_pred before normalizing: {}".format(y_pred))
 y_pred = [round(float(dataset_utils.shift_scale(old_value, 0, 1, 1, 5))) for old_value in y_pred]
-print("y_pred after normalizing: {}".format(y_pred))
 print("{}: End of classification".format(datetime.now()))
 
 # Creating summaries.
@@ -453,6 +508,7 @@ print("{}: Start of creation of summaries".format(datetime.now()))
 y_summary = create_summaries(gold_data_set.filter(items=['id'], axis=1).iloc[:, 0],
                              train_json_object,
                              gold_json_object,
+                             args.use_existing,
                              args.textual_summarization_sentence_sentiment,
                              args.textual_summarization_sentence_word_embeddings,
                              args.NUM_OF_SENTENCES_IN_SUMMARY)

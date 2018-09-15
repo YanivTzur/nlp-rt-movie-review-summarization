@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import re
+from math import floor
 
 import nltk
 from nltk.corpus import stopwords
@@ -72,7 +73,7 @@ def drop_redundant_columns(dataset):
     :return: the dataset received after removing the redundant columns.
     """
     columns_to_drop = {'year', 'average_rating', 'tomatometer', 'name'} \
-                      .intersection(list(dataset.columns))
+        .intersection(list(dataset.columns))
     for column_name in columns_to_drop:
         dataset.drop(column_name, axis=1)
     return dataset
@@ -162,6 +163,7 @@ def evaluate_predicted_sentiment(evaluation_file_name,
     The method also accepts as input two integers normalized_range_min and normalized_range_max,
     such that normalized_range_max > normalized_range_min, and first converts each test and gold
     rating to the respective normalized scale before comparing them.
+
     :param evaluation_file_name: the name to give the output file.
     :param decoded_test_data: the test set data.
     :param gold_data: the gold set data.
@@ -177,11 +179,14 @@ def evaluate_predicted_sentiment(evaluation_file_name,
     eval_file.writelines(['# ------------------------\n',
                           '#  Over All Evaluation - Final Project - Evaluation\n',
                           '# ------------------------\n',
-                          'index\t\t\taccuracy\n'])
+                          'index\tmovie id\tpredicted score\treal score\taccuracy\n'])
     counter = 0
     accuracy_percentage_sum = 0
     curr_num_of_correct_predictions = 0
     movie_rating_lists = {key: [] for key in range(normalized_range_min, normalized_range_max + 1)}
+
+    computed_label = -1
+    ground_truth_label = -1
 
     for decoded_movie in decoded_test_data:
         for gold_movie in gold_data:
@@ -189,16 +194,16 @@ def evaluate_predicted_sentiment(evaluation_file_name,
                 if 'reviews' in gold_movie.keys():
                     review_ratings = [review['rating']
                                       for review in gold_movie['reviews']]
-                    gold_movie[ground_truth_label_name] = round(shift_scale(round(sum(review_ratings)
+                    gold_movie[ground_truth_label_name] = floor(shift_scale(round(sum(review_ratings)
                                                                                   /
                                                                                   len(review_ratings)),
                                                                             1, 5, normalized_range_min,
                                                                             normalized_range_max))
                 else:
-                    gold_movie[ground_truth_label_name] = round(shift_scale(gold_movie[ground_truth_label_name],
+                    gold_movie[ground_truth_label_name] = floor(shift_scale(gold_movie[ground_truth_label_name],
                                                                             1, 5, normalized_range_min,
                                                                             normalized_range_max))
-                computed_label = round(shift_scale(decoded_movie[predicted_sentiment_label_name], 1,
+                computed_label = floor(shift_scale(decoded_movie[predicted_sentiment_label_name], 1,
                                                    5, normalized_range_min, normalized_range_max))
                 ground_truth_label = gold_movie[ground_truth_label_name]
                 movie_rating_lists[ground_truth_label].append(decoded_movie)
@@ -208,8 +213,13 @@ def evaluate_predicted_sentiment(evaluation_file_name,
                     curr_num_of_correct_predictions = 1
                     accuracy_percentage_sum += 1
         counter += 1
-        eval_file.write("{}\n".format("\t\t\t\t".join([str(counter),
-                                                       str(curr_num_of_correct_predictions)])))
+        eval_file.write("{:<5d}\t{:<8d}\t{:<15d}\t{:<10d}\t{:<8d}\n".format(counter,
+                                                                            decoded_movie['id'],
+                                                                            computed_label,
+                                                                            ground_truth_label,
+                                                                            curr_num_of_correct_predictions))
+        # eval_file.write("{}\n".format("\t\t\t\t".join([str(counter),
+        #                                                str(curr_num_of_correct_predictions)])))
     accuracy_percentage = (accuracy_percentage_sum * 1.0) / counter
     eval_file.write('# ------------------------\n')
     eval_file.write('Overall Accuracy (higher is better): {}\n'.format(str(accuracy_percentage)))
