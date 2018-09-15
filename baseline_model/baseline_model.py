@@ -5,11 +5,7 @@ import random
 from utils import dataset_utils, sentiment_utils
 import datetime
 
-USAGE_STRING = 'Usage: python baseline_model.py [corpus_path] True/False'
-NORMALIZED_RANGE_MIN = 1  # The minimum value in the set of values a sentiment score
-                          # can receive.
-NORMALIZED_RANGE_MAX = 2  # The maximum value in the set of values a sentiment score
-                          #  can receive.
+USAGE_STRING = 'Usage: python baseline_model.py [corpus_path]'
 
 
 def train_model(train_data_set):
@@ -28,12 +24,12 @@ def train_model(train_data_set):
     for movie in train_data_set:
         sentiment_score = 0
         review_ratings = [dataset_utils.shift_scale(review['rating'], 1, 5,
-                                                    NORMALIZED_RANGE_MIN, NORMALIZED_RANGE_MAX)
+                                                    1, 5)
                           for review in movie['reviews']]
         movie['rating_label'] = sum(review_ratings) / len(review_ratings)
         for review in movie['reviews']:
-            sentiment_score += sentiment_utils.get_sentiment_score(review['text'], NORMALIZED_RANGE_MIN,
-                                                                   NORMALIZED_RANGE_MAX)[0]
+            sentiment_score += sentiment_utils.get_sentiment_score(review['text'], 1,
+                                                                   5)[0]
 
         sentiment_score_average = sentiment_score / len(movie['reviews'])
         curr_movie_sentiment_average = movie['rating_label'] / sentiment_score_average
@@ -45,7 +41,7 @@ def train_model(train_data_set):
         movie_count += 1
         print("Movies trained: " + str(movie_count))
 
-    sentiment_ratio = min(all_movies_sent_average, NORMALIZED_RANGE_MAX)
+    sentiment_ratio = min(all_movies_sent_average, 5)
     print("{0}: Trained sentiment ratio is {1}".format(datetime.datetime.now(),
                                                        sentiment_ratio))
 
@@ -59,11 +55,11 @@ def decode(test_data, sentiment_ratio):
         sentiment_score = 0
         for review in movie['reviews']:
             sentiment_score += sentiment_utils.get_sentiment_score(review['text'],
-                                                                   NORMALIZED_RANGE_MIN,
-                                                                   NORMALIZED_RANGE_MAX)[0]
+                                                                   1,
+                                                                   5)[0]
         sentiment_score_average = sentiment_score / len(movie['reviews'])
 
-        movie['average_rating'] = min(round(sentiment_score_average * sentiment_ratio), NORMALIZED_RANGE_MAX)
+        movie['average_rating'] = min(round(sentiment_score_average * sentiment_ratio), 5)
 
         # We take the first sentence of a random summary as the chosen summary.
         random.seed(0)  # Set constant seed so every user gets the same results.
@@ -79,20 +75,13 @@ def prepare_gold_data(gold_data_set):
 
 
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 2:
         print(USAGE_STRING)
         exit(1)
     if not os.path.exists(sys.argv[1]):
         print('File with path {} does not exist.'.format(sys.argv[1]))
         exit(1)
-    if sys.argv[2].lower() not in ['true', 'false']:
-        print(USAGE_STRING)
-        exit(1)
 
-    if sys.argv[2].lower() == 'true':
-        preprocess = True
-    else:
-        preprocess = False
     data_sets = dataset_utils.build_data_sets_from_json_file(sys.argv[1])
     print("{} : Starting training".format(datetime.datetime.now()))
     trained_sentiment_ratio = train_model(data_sets['train'])
@@ -102,9 +91,12 @@ def main():
     print("{} : End of decoding".format(datetime.datetime.now()))
     gold_data = prepare_gold_data(data_sets['gold'])
     print("{} : Starting evaluation".format(datetime.datetime.now()))
-    dataset_utils.evaluate_predicted_sentiment("baselineOverAllEvaluation.eval",
+    dataset_utils.evaluate_predicted_sentiment("baselineOverAllEvaluation_1_5.eval",
                                                decoded_test_data, gold_data,
-                                               NORMALIZED_RANGE_MIN, NORMALIZED_RANGE_MAX)
+                                               1, 5)
+    dataset_utils.evaluate_predicted_sentiment("baselineOverAllEvaluation_1_3.eval",
+                                               decoded_test_data, gold_data,
+                                               1, 3)
     dataset_utils.evaluate_summary("baselineSummaryEvaluationROUGE1.eval", decoded_test_data, gold_data, 1)
     dataset_utils.evaluate_summary("baselineSummaryEvaluationROUGE2.eval", decoded_test_data, gold_data, 2)
     print("{} : End of evaluation".format(datetime.datetime.now()))

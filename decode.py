@@ -149,15 +149,16 @@ def get_columns_to_use(input_possible_feature_columns, input_column_dictionary, 
 def get_sentence_data_list(input_dataset):
     sentence_data_list = []
     for movie in input_dataset:
-        sentence_data = movie['sentences_data']
-        curr_sentence_data = dict()
-        curr_sentence_data['text'] = sentence_data[0]
-        curr_sentence_data['id'] = movie['id']
-        curr_sentence_data['sentence_sentiment'] = sentence_data[1]
-        for i in range(0, len(sentence_data[2])):
-            curr_sentence_data['vector_embedding_comp_' + str(i)] = sentence_data[2][i]
-        curr_sentence_data['rouge_score'] = sentence_data[3]
-        sentence_data_list.append(curr_sentence_data)
+        sentences_data = movie['sentences_data']
+        for sentence_data in sentences_data:
+            curr_sentence_data = dict()
+            curr_sentence_data['text'] = sentence_data[0]
+            curr_sentence_data['id'] = movie['id']
+            curr_sentence_data['sentence_sentiment'] = sentence_data[1]
+            for i in range(0, len(sentence_data[2])):
+                curr_sentence_data['vector_embedding_comp_' + str(i)] = sentence_data[2][i]
+            curr_sentence_data['rouge_score'] = sentence_data[3]
+            sentence_data_list.append(curr_sentence_data)
     return sentence_data_list
 
 
@@ -276,7 +277,7 @@ def create_summaries(movie_id_column,
             .load_weights(get_existing_summary_gen_model_file_name(use_sentence_sentiment_score, use_word_embeddings))
     else:
         # Fitting the ANN to the Training set
-        sentence_rouge_score_regressor.fit(sentence_X_train, sentence_y_train, batch_size=10, epochs=10)
+        sentence_rouge_score_regressor.fit(sentence_X_train, sentence_y_train, batch_size=10, epochs=20)
         sentence_rouge_score_regressor.save(get_existing_summary_gen_model_file_name(use_sentence_sentiment_score,
                                                                                      use_word_embeddings))
 
@@ -284,14 +285,14 @@ def create_summaries(movie_id_column,
 
     print("{}: End of ranking of sentences".format(datetime.now()))
 
-    print("{}: Start of creation of summaries".format(datetime.now()))
+    print("{}: Start of generation of summaries from ranked sentences".format(datetime.now()))
 
     summaries = generate_summaries_from_ranked_sentences(gold_sentences_data_df.drop('rouge_score', axis=1),
                                                          sentence_y_pred,
                                                          number_of_sentences_in_summary)
     summaries = sort_summaries_by_input_movie_id_order(movie_id_column, summaries)
 
-    print("{}: Start of creation of summaries".format(datetime.now()))
+    print("{}: End of generation of summaries from ranked sentences".format(datetime.now()))
 
     return summaries
 

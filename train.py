@@ -195,10 +195,10 @@ def process_movie(movie, dataset_name,
     if use_sentence_sentiment == CREATE_FROM_SCRATCH or use_sentence_word_embeddings == CREATE_FROM_SCRATCH:
         curr_sentences = [sentence for sentence in review_concatenation.split(".")
                           if len(sentence) > 0]
-        sentences_data.extend([result_component for result in
-                               compute([delayed(get_sentence_data)(sentence, movie['summary'])
+        results = compute([delayed(get_sentence_data)(sentence, movie['summary'])
                                for sentence in curr_sentences])
-                               for result_component in result[0]])
+        results = [result for result in results[0]]
+        sentences_data.extend(results)
         movie['sentences_data'] = sentences_data
     if use_movie_rating_distribution == CREATE_FROM_SCRATCH \
             or \
@@ -402,7 +402,7 @@ else:
     train_data_set = data_sets['train']
     gold_data_set = data_sets['gold']
 
-train_data_set = construct_data_set('train', train_data_set[:2],
+train_data_set = construct_data_set('train', train_data_set,
                                     args.movie_rating_distribution,
                                     args.review_rating_distribution,
                                     args.word_embeddings, args.sentiment_phrases,
@@ -410,7 +410,7 @@ train_data_set = construct_data_set('train', train_data_set[:2],
                                     args.textual_summarization_sentence_word_embeddings)
 with open(os.path.join(args.OUTPUT_FILES_PATH, 'train.json'), 'w') as output_file:
     json.dump(train_data_set, output_file)
-gold_data_set = construct_data_set('gold', gold_data_set[:2],
+gold_data_set = construct_data_set('gold', gold_data_set,
                                    args.movie_rating_distribution,
                                    args.review_rating_distribution,
                                    args.word_embeddings, args.sentiment_phrases,
