@@ -414,7 +414,7 @@ parser.add_argument("-ts_swe", "--textual_summarization_sentence_word_embeddings
                     help="Use the sum of word embeddings of each sentence to rank the sentence to decide whether "
                          +
                          "to choose to include it in a textual summary.")
-parser.add_argument("--use_existing", action="store_true",
+parser.add_argument("--use-existing", action="store_true",
                     default=False,
                     help="Whether to use an existing model from a file if it exists. If not set, trains a new model "
                          +
