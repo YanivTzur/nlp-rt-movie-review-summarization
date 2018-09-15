@@ -30,7 +30,8 @@ The project consists of 3 main scripts that you will need to use to make full us
   The script ultimately creates a training dataset by the name train.json and a gold dataset by the name gold.json. If the need arises, to save computation time, here are links to fully created training and gold datasets:
     * [train.json](https://drive.google.com/open?id=1J4c0YAyrJH2POhpUxk0b3bN8odsgB4W9)
     * [gold.json](https://drive.google.com/open?id=1UbcnIkXsR_aDjxI3CoRV67oecX1FYKnW)
-  Following is a general outline of how to call the script:
+    
+    Following is a general outline of how to call the script:
   
   `train.py CORPUS_PATH OUTPUT_FILES_PATH [-mrd {0,1,2}] [-rrd {0,1,2}] [-we {0,1,2}] [-sp {0,1,2}]
                                           [-ts_ss {0,1,2}] [-ts_swe {0,1,2}]`
