@@ -3,7 +3,6 @@ An NLP project concerned with aggregating movie reviews. The project performs tw
 
 ## Installation:
 1. Install all needed dependencies. They can all be installed using `pip`. These dependencies include:
-    * hashlib
     * BitVector
     * numpy
     * pandas
