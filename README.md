@@ -77,9 +77,9 @@ The project consists of 3 main scripts that you will need to use to make full us
 
  This script takes as input the file produced by decode.py, and uses it to evaluate the results of the decoding performed by decode.py. The script produces as output 3 files:
  
-     * sentiment_analysis.eval: Shows the results of sentiment analysis.
-     * summary_evaluationROUGE1.eval: Shows the ROUGE-1 metrics for the texual summarization task.
-     * summary_evaluationROUGE2.eval: Shows the ROUGE-2 metrics for the texual summarization task.
+   * sentiment_analysis.eval: Shows the results of sentiment analysis.
+   * summary_evaluationROUGE1.eval: Shows the ROUGE-1 metrics for the texual summarization task.
+   * summary_evaluationROUGE2.eval: Shows the ROUGE-2 metrics for the texual summarization task.
 
   The script puts these files in the output directory the user gives as input in the command line, as explained below.
   
@@ -88,7 +88,7 @@ The project consists of 3 main scripts that you will need to use to make full us
   
   `eval.py DECODED_PATH OUTPUT_FILES_PATH NORMALIZED_RANGE_MIN NORMALIZED_RANGE_MAX`
   
-    Explanation:
+  Explanation:
     * Mandatory positional arguments:
       * DECODED_PATH: The path of the output of decode.py.
       * OUTPUT_FILES_PATH: The directory where you want the script to put its 3 output files.
