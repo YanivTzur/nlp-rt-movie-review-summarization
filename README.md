@@ -71,7 +71,7 @@ The project consists of 3 main scripts that you will need to use to make full us
       * -sp: Whether to use, for each movie, for each possible sentiment phrase, whether it is present in the reviews of the movie.
       * -ts_ss: Whether to use the sentiment score for each sentence of each review, for textual summarization.
       * -ts_swe: Whether to use word embeddings for each sentence of each review, for textual summarization.
-      * --use-existing: VERY IMPORTANT!!! Use this flag to designate that you want to use a pre-trained neural network model from disk, if such exists for the chosen combination of features. You need to set this flag in order to get the same results as we did in our trained models.
+      * --use-existing: **VERY IMPORTANT!!!** Use this flag to designate that you want to use a pre-trained neural network model from disk, if such exists for the chosen combination of features. You need to set this flag in order to get the same results as we did in our trained models.
 
 * eval.py:
 
