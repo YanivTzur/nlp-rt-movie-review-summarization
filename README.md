@@ -50,7 +50,49 @@ The project consists of 3 main scripts that you will need to use to make full us
   
 * decode.py:
 
+  This script takes as input the train.json and gold.json and uses them to predict the sentiment score of each movie, as well as to create a summary for the reviews of each movie. After the script finishes its operation, it creates a json file containing, for each movie, predicted and ground-truth values for both sentiment analysis and textual summarization.
+  
+  Following is a general outline of how to call the script:
+  
+  
+  `decode.py TRAIN_PATH GOLD_PATH OUTPUT_FILE_PATH NUM_OF_SENTENCES_IN_SUMMARY [-mrd] [-rrd] [-we] [-sp] [-ts_ss] [-ts_swe]
+                 [--use-existing]`
+  
+    Explanation:
+    * Mandatory positional arguments:
+      * TRAIN_PATH: The path of the train.json file.
+      * GOLD_PATH: The path of the gold.json file.
+      * OUTPUT_FILE_PATH: The path in which to save the output of the script, including the file's name.
+      * NUM_OF_SENTENCES_IN_SUMMARY: The number of sentences to choose from each movie's reviews and construct a summary from.
+    * Optional arguments:
+      * -mrd: Whether to use the number of reviews with a certain computed sentiment score.
+      * -rrd: Whether to use the average percent of sentiment phrases in each review with a certain computed sentiment score.
+      * -we: Whether to use word embeddings for the concatenation of all reviews of each movie.
+      * -sp: Whether to use, for each movie, for each possible sentiment phrase, whether it is present in the reviews of the movie.
+      * -ts_ss: Whether to use the sentiment score for each sentence of each review, for textual summarization.
+      * -ts_swe: Whether to use word embeddings for each sentence of each review, for textual summarization.
+      * --use-existing: VERY IMPORTANT!!! Use this flag to designate that you want to use a pre-trained neural network model from disk, if such exists for the chosen combination of features. You need to set this flag in order to get the same results as we did in our trained models.
 
 * eval.py:
+
+ This script takes as input the file produced by decode.py, and uses it to evaluate the results of the decoding performed by decode.py. The script produces as output 3 files:
+ 
+     * sentiment_analysis.eval: Shows the results of sentiment analysis.
+     * summary_evaluationROUGE1.eval: Shows the ROUGE-1 metrics for the texual summarization task.
+     * summary_evaluationROUGE2.eval: Shows the ROUGE-2 metrics for the texual summarization task.
+
+  The script puts these files in the output directory the user gives as input in the command line, as explained below.
+  
+  Following is a general outline of how to call the script:
+  
+  
+  `eval.py DECODED_PATH OUTPUT_FILES_PATH NORMALIZED_RANGE_MIN NORMALIZED_RANGE_MAX`
+  
+    Explanation:
+    * Mandatory positional arguments:
+      * DECODED_PATH: The path of the output of decode.py.
+      * OUTPUT_FILES_PATH: The directory where you want the script to put its 3 output files.
+      * NORMALIZED_RANGE_MIN: The minimum of the discrete range into which sentiment scores are to be normalized. In our experiments the value of this parameter was always 1.
+      * NORMALIZED_RANGE_MAX: The maximum of the discrete range into which sentiment scores are to be normalized. In our experiments the value of this parameter was always 3 or 5.
 
 Additionally, there are some more scripts that contain code used by the above-mentioned 3 main scripts. Also there
