@@ -89,10 +89,10 @@ The project consists of 3 main scripts that you will need to use to make full us
   `eval.py DECODED_PATH OUTPUT_FILES_PATH NORMALIZED_RANGE_MIN NORMALIZED_RANGE_MAX`
   
   Explanation:
-    * Mandatory positional arguments:
-      * DECODED_PATH: The path of the output of decode.py.
-      * OUTPUT_FILES_PATH: The directory where you want the script to put its 3 output files.
-      * NORMALIZED_RANGE_MIN: The minimum of the discrete range into which sentiment scores are to be normalized. In our experiments the value of this parameter was always 1.
-      * NORMALIZED_RANGE_MAX: The maximum of the discrete range into which sentiment scores are to be normalized. In our experiments the value of this parameter was always 3 or 5.
+  * Mandatory positional arguments:
+    * DECODED_PATH: The path of the output of decode.py.
+    * OUTPUT_FILES_PATH: The directory where you want the script to put its 3 output files.
+    * NORMALIZED_RANGE_MIN: The minimum of the discrete range into which sentiment scores are to be normalized. In our experiments the value of this parameter was always 1.
+    * NORMALIZED_RANGE_MAX: The maximum of the discrete range into which sentiment scores are to be normalized. In our experiments the value of this parameter was always 3 or 5.
 
 Additionally, there are some more scripts that contain code used by the above-mentioned 3 main scripts. Also there
