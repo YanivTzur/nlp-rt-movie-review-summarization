@@ -95,4 +95,18 @@ The project consists of 3 main scripts that you will need to use to make full us
     * NORMALIZED_RANGE_MIN: The minimum of the discrete range into which sentiment scores are to be normalized. In our experiments the value of this parameter was always 1.
     * NORMALIZED_RANGE_MAX: The maximum of the discrete range into which sentiment scores are to be normalized. In our experiments the value of this parameter was always 3 or 5.
 
-Additionally, there are some more scripts that contain code used by the above-mentioned 3 main scripts. Also there
+## Baseline Model Script
+This script runs the baseline model on the original complete corpus. To run it you simply need to run:
+
+`baseline_model.py [corpus_path]`
+
+where corpus_path is the path of the corpus on your computer. At the end of its execution, the script produces as output 4 files, similarly to eval.py. These files are:
+
+* baselineOverAllEvaluation_1_3.eval: Contains evaluation of sentiment analysis results on a scale of 1 to 3.
+* baselineOverAllEvaluation_1_5.eval: Contains evaluation of sentiment analysis results on a scale of 1 to 5.
+* baselineSummaryEvaluationROUGE1.eval: Contains ROUGE-1 metrics of the textual summarization in the baseline model.
+* baselineOverAllEvaluation.eval: Contains ROUGE-2 metrics of the textual summarization in the baseline model.
+
+## Web Crawler Code
+The folder rotten_tomatoes_web_crawler/CorpusGeneratorSpiderProject contains the code used to crawl Rotten Tomatoes for movie reviews and to use them to construct our corpus. If you are interested, you can find instructions on https://scrapy.org/ regarding how to use their framework to run this web crawling script (also called a spider by scrapy).
+Also, the folder rotten_tomatoes_web_crawler contains some ad hoc code created for converting review scores to appropriate values and for testing the results of the crawling.
