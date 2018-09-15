@@ -1,5 +1,5 @@
 # nlp-rt-movie-review-summarization
-An NLP project concerned with aggregating movie reviews (such as those on Rotten Tomatoes). The project performs two tasks. One task is sentiment analysis. The second task is the automatic generation of summaries for movies based on their reviews. These tasks are performed based on a dataset of movie reviews crawled from Rotten Tomatoes.
+An NLP project concerned with aggregating movie reviews. The project performs two tasks. One task is sentiment analysis. The second task is the automatic generation of summaries for movies based on their reviews. These tasks are performed based on a dataset of movie reviews crawled from Rotten Tomatoes.
 
 ## Installation:
 1. Install all needed dependencies. They can all be installed using `pip`. These dependencies include:
