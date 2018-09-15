@@ -30,6 +30,22 @@ The project consists of 3 main scripts that you will need to use to make full us
   The script ultimately creates a training dataset by the name train.json and a gold dataset by the name gold.json. If the need arises, to save computation time, here are links to fully created training and gold datasets:
     * [train.json](https://drive.google.com/open?id=1J4c0YAyrJH2POhpUxk0b3bN8odsgB4W9)
     * [gold.json](https://drive.google.com/open?id=1UbcnIkXsR_aDjxI3CoRV67oecX1FYKnW)
+  Following is a general outline of how to call the script:
+  
+  `train.py CORPUS_PATH OUTPUT_FILES_PATH [-mrd {0,1,2}] [-rrd {0,1,2}] [-we {0,1,2}] [-sp {0,1,2}]
+                                          [-ts_ss {0,1,2}] [-ts_swe {0,1,2}]`
+                                          
+  Explanation:
+    * Mandatory positional arguments:
+      * CORPUS_PATH: The path where the complete corpus is located at on your computer.
+      * OUTPUT_FILES_PATH: The directory in which to put the output files (train.json and gold.json).
+    * Optional arguments (0 denotes don't compute, 1 denotes use existing if loading from disk, 2 denotes compute from scratch):
+      * -mrd: Whether to compute the number of reviews with a certain computed sentiment score, for each of the possible computed values {1,2,3,4,5}.
+      * -rrd: Whether to compute the average percent of sentiment phrases in each review with a certain computed sentiment score, for each possible computed value from the set {1,2,3,4,5}.
+      * -we: Whether to compute word embeddings for the concatenation of all reviews of each movie.
+      * -sp: Whether to compute, for each movie, for each possible sentiment phrase, whether it is present in the reviews of the movie.
+      * -ts_ss: Whether to compute the sentiment score for each sentence of each review, for textual summarization.
+      * -ts_swe: Whether to compute word embeddings for each sentence of each review, for textual summarization.
   
 * decode.py:
 
