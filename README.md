@@ -20,6 +20,19 @@ An NLP project concerned with aggregating movie reviews. The project performs tw
 
    from a command line window / terminal to download the corpus required for the spacy NLP library to train word embeddings.
 
+## Before Running the Program's Scripts:
+
+It is possible that on some Linux distributions, with certain versions of Python, with certain locales, when you try running one of the scripts you'll receive the error:
+
+`ValueError: unknown locale: en_IL`
+
+In order to resolve this, for a locale `locale`, e.g. `en_IL` as above, before running the scripts in a terminal, enter the command:
+
+`export LANG=en_IL.UTF-8`
+
+Then run the scripts again in the same terminal.
+
+
 ## Project Structure:
 The project consists of 3 main scripts that you will need to use to make full use of the project and to evaluate its results. These scripts are:
 
