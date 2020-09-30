@@ -1,4 +1,4 @@
-# nlp-rt-movie-review-summarization
+# Rotten Tomatoes Movie Review Summarization
 An NLP project concerned with aggregating movie reviews. The project performs two tasks. One task is sentiment analysis. The second task is the automatic generation of summaries for movies based on their reviews. These tasks are performed based on a dataset of movie reviews crawled from Rotten Tomatoes.
 
 ## Installation:
@@ -121,4 +121,4 @@ where corpus_path is the path of the corpus on your computer. At the end of its 
 
 ## Web Crawler Code
 The folder rotten_tomatoes_web_crawler/CorpusGeneratorSpiderProject contains the code used to crawl Rotten Tomatoes for movie reviews and to use them to construct our corpus. If you are interested, you can find instructions on https://scrapy.org/ regarding how to use their framework to run this web crawling script (also called a spider by scrapy).
-Also, the folder rotten_tomatoes_web_crawler contains some ad hoc code created for converting review scores to appropriate values and for testing the results of the crawling.
+Also, the folder `rotten_tomatoes_web_crawler` contains some ad hoc code created for converting review scores to appropriate values and for testing the results of the crawling.
